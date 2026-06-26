@@ -1,0 +1,22 @@
+{
+  "name": "originshear",
+  "private": true,
+  "version": "1.0.0",
+  "description": "ORIGINSHEAR — Blockchain proof of origin and marketplace for Lesotho wool & mohair farmers.",
+  "workspaces": [
+    "originshear-frontend",
+    "originshear-contracts"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=originshear-frontend",
+    "build": "npm run build --workspace=originshear-frontend",
+    "lint": "npm run lint --workspace=originshear-frontend",
+    "test": "npm run test --workspace=originshear-contracts",
+    "compile": "npm run compile --workspace=originshear-contracts",
+    "node": "npm run node --workspace=originshear-contracts",
+    "deploy:local": "npm run deploy:local --workspace=originshear-contracts",
+    "deploy:alfajores": "npm run deploy:alfajores --workspace=originshear-contracts",
+    "deploy:celo": "npm run deploy:celo --workspace=originshear-contracts",
+    "sync:addresses": "node scripts/sync-deployments.js"
+  }
+}

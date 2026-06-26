@@ -1,0 +1,22 @@
+{
+  "name": "originshear-contracts",
+  "version": "1.0.0",
+  "description": "ORIGINSHEAR — Blockchain Proof of Origin and marketplace for Lesotho wool & mohair smallholder farmers (Celo + Solidity).",
+  "license": "MIT",
+  "scripts": {
+    "test": "hardhat test",
+    "compile": "hardhat compile",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "deploy:alfajores": "hardhat run scripts/deploy.js --network alfajores",
+    "deploy:celo": "hardhat run scripts/deploy.js --network celo",
+    "node": "hardhat node"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.0",
+    "dotenv": "^16.4.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.0"
+  }
+}
