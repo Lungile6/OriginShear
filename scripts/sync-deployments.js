@@ -1,13 +1,3 @@
-/**
- * Copy contract addresses from originshear-contracts/deployments.<network>.json
- * into originshear-frontend/.env after a deployment.
- *
- * Usage:
- *   node scripts/sync-deployments.js alfajores
- *   node scripts/sync-deployments.js celo
- *   node scripts/sync-deployments.js localhost
- */
-
 const fs = require("fs");
 const path = require("path");
 
@@ -15,11 +5,12 @@ const network = process.argv[2];
 
 if (!network) {
   console.error("Usage: node scripts/sync-deployments.js <network>");
-  console.error("Example: node scripts/sync-deployments.js alfajores");
+  console.error("Example: node scripts/sync-deployments.js celoSepolia");
   process.exit(1);
 }
 
 const PREFIX_BY_NETWORK = {
+  celoSepolia: "VITE_CELO_SEPOLIA",
   alfajores: "VITE_ALFAJORES",
   celo: "VITE_CELO",
   localhost: "VITE_LOCAL",
@@ -29,7 +20,7 @@ const PREFIX_BY_NETWORK = {
 const prefix = PREFIX_BY_NETWORK[network];
 
 if (!prefix) {
-  console.error(`Unknown network "${network}". Supported: alfajores, celo, localhost, hardhat`);
+  console.error(`Unknown network "${network}". Supported: celoSepolia, celo, localhost, hardhat`);
   process.exit(1);
 }
 
@@ -66,16 +57,12 @@ const seen = new Set();
 
 const merged = envLines.map((line) => {
   const match = line.match(/^([A-Z0-9_]+)=/);
-  if (!match) {
-    return line;
-  }
-
+  if (!match) return line;
   const key = match[1];
   if (updates[key] !== undefined) {
     seen.add(key);
     return `${key}=${updates[key]}`;
   }
-
   return line;
 });
 
