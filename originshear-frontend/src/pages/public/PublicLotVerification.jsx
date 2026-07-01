@@ -1,24 +1,18 @@
 import { useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useChainId, useReadContract } from "wagmi";
-import { celoAlfajores } from "wagmi/chains";
+import { celoSepolia } from "../../lib/wagmiConfig";
 import { VERIFIER_ABI } from "../../contracts/ProofOfOriginVerifier";
 import { FibreTypeLabel, GradeLabel } from "../../contracts/HarvestLedger";
 import { getContractAddresses } from "../../contracts/addresses";
 import { gramsToKg, shorten } from "../../lib/utils";
 
-/**
- * Public, walletless verification screen. Designed to be the landing
- * target when someone scans a Lot QR code — works with no wallet
- * connection since ProofOfOriginVerifier.verify() is a free view call.
- * Falls back to Alfajores if no wallet/chain is connected at all.
- */
 export default function PublicLotVerification() {
   const params = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const connectedChainId = useChainId();
-  const chainId = connectedChainId || celoAlfajores.id;
+  const chainId = connectedChainId || celoSepolia.id;
   const addresses = getContractAddresses(chainId);
 
   const [manualLotId, setManualLotId] = useState("");
@@ -78,12 +72,16 @@ export default function PublicLotVerification() {
       </header>
 
       <div className="max-w-sm mx-auto">
-        {isLoading && <p className="text-center text-body-sm text-on-surface-variant py-12">Verifying on Celo…</p>}
+        {isLoading && (
+          <p className="text-center text-body-sm text-on-surface-variant py-12">Verifying on Celo…</p>
+        )}
 
         {isError && (
           <div className="bg-error-container/40 border border-error/30 rounded-xl p-6 text-center">
             <p className="font-bold text-error mb-1">Verification failed</p>
-            <p className="text-body-sm text-on-surface-variant">{error?.shortMessage || "Could not reach the verifier contract."}</p>
+            <p className="text-body-sm text-on-surface-variant">
+              {error?.shortMessage || "Could not reach the verifier contract."}
+            </p>
           </div>
         )}
 
@@ -111,7 +109,7 @@ export default function PublicLotVerification() {
               </p>
               {result.valid && (
                 <a
-                  href={`https://${chainId === celoAlfajores.id ? "alfajores." : ""}celoscan.io/address/${addresses?.harvestLedger}`}
+                  href={`https://celo-sepolia.blockscout.com/address/${addresses?.harvestLedger}`}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 bg-secondary-container text-on-secondary-container rounded-full px-4 py-1.5 text-label-sm font-semibold"
