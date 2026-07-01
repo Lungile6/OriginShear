@@ -13,16 +13,20 @@ module.exports = {
     hardhat: {
       chainId: 31337,
     },
-    alfajores: {
-      url: "https://alfajores-forno.celo-testnet.org",
-      chainId: 44787,
-      accounts: process.env.PRIVATE_KEY && process.env.PRIVATE_KEY.match(/^(0x)?[0-9a-fA-F]{64}$/) ? [process.env.PRIVATE_KEY] : [],
-      gasPrice: 500000000,
+    celoSepolia: {
+      url: process.env.CELO_SEPOLIA_RPC_URL || "https://celo-sepolia.g.alchemy.com/v2/guusXcuDWSTypMk8NFB4_",
+      chainId: 11142220,
+      accounts: process.env.PRIVATE_KEY
+        ? [process.env.PRIVATE_KEY.startsWith("0x") ? process.env.PRIVATE_KEY : `0x${process.env.PRIVATE_KEY}`]
+        : [],
+      gasPrice: 100000000000,
     },
     celo: {
       url: "https://forno.celo.org",
       chainId: 42220,
-      accounts: process.env.PRIVATE_KEY && process.env.PRIVATE_KEY.match(/^(0x)?[0-9a-fA-F]{64}$/) ? [process.env.PRIVATE_KEY] : [],
+      accounts: process.env.PRIVATE_KEY
+        ? [process.env.PRIVATE_KEY.startsWith("0x") ? process.env.PRIVATE_KEY : `0x${process.env.PRIVATE_KEY}`]
+        : [],
       gasPrice: 500000000,
     },
   },
