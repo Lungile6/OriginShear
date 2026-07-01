@@ -2,9 +2,9 @@ import { useNavigate } from "react-router-dom";
 
 const STEPS = [
   "Open your wallet app (Valora or MetaMask).",
-  'Go to Settings → Networks → Add Network.',
-  "Enter Celo Alfajores: RPC https://alfajores-forno.celo-testnet.org, Chain ID 44787, Currency CELO.",
-  "Save, then switch to the Alfajores network.",
+  "Go to Settings → Networks → Add Network.",
+  "Enter Celo Sepolia: RPC https://celo-sepolia.g.alchemy.com/v2/guusXcuDWSTypMk8NFB4_, Chain ID 11142220, Currency CELO.",
+  "Save, then switch to the Celo Sepolia network.",
   "Return to ORIGINSHEAR and refresh this page.",
 ];
 

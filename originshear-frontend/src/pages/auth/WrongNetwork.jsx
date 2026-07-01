@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAccount, useSwitchChain } from "wagmi";
-import { celoAlfajores } from "wagmi/chains";
+import { celoSepolia } from "../../lib/wagmiConfig";
 
 export default function WrongNetwork() {
   const navigate = useNavigate();
@@ -22,11 +22,12 @@ export default function WrongNetwork() {
           </div>
           <h1 className="text-headline-md font-bold mb-2">Wrong Network</h1>
           <p className="text-body-md text-on-surface-variant mb-6">
-            Your wallet is connected to the wrong network. <span className="font-semibold text-on-surface">ORIGINSHEAR</span> runs on Celo.
+            Your wallet is connected to the wrong network.{" "}
+            <span className="font-semibold text-on-surface">ORIGINSHEAR</span> runs on Celo Sepolia.
           </p>
 
           <button
-            onClick={() => switchChain({ chainId: celoAlfajores.id })}
+            onClick={() => switchChain({ chainId: celoSepolia.id })}
             disabled={isPending}
             className="w-full h-14 rounded-lg bg-role-validator text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
           >
@@ -37,7 +38,7 @@ export default function WrongNetwork() {
                 <path d="M7 7h10l-3-3M17 17H7l3 3" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             )}
-            Switch to Celo
+            Switch to Celo Sepolia
           </button>
 
           <button
@@ -60,11 +61,13 @@ export default function WrongNetwork() {
               ERROR_CODE: 0x403_INVALID_CHAIN_ID
             </code>
             <code className="text-label-sm text-on-surface-variant font-mono block">
-              CURRENT: {chainId ?? "unknown"} · EXPECTED: 44787 (Celo Alfajores)
+              CURRENT: {chainId ?? "unknown"} · EXPECTED: 11142220 (Celo Sepolia)
             </code>
           </div>
 
-          {error && <p className="mt-3 text-body-sm text-error">{error.message?.split("\n")[0]}</p>}
+          {error && (
+            <p className="mt-3 text-body-sm text-error">{error.message?.split("\n")[0]}</p>
+          )}
         </div>
       </div>
     </div>
