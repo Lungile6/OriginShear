@@ -1,5 +1,4 @@
 import TopAppBar from "../components/nav/TopAppBar";
-import BottomNav from "../components/nav/BottomNav";
 
 /**
  * Shared chrome for all authenticated, role-bound screens: fixed top app
@@ -11,7 +10,6 @@ export default function AppLayout({ role, title, children }) {
     <div className="min-h-dvh flex flex-col bg-background text-on-surface">
       <TopAppBar title={title} />
       <main className="flex-1 pt-14 pb-20 max-w-[1024px] w-full mx-auto">{children}</main>
-      <BottomNav role={role} />
     </div>
   );
 }

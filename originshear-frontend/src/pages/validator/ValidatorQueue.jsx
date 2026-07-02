@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useChainId, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import AppLayout from "../../layouts/AppLayout";
 import { useLotQueue } from "../../hooks/useLotQueue";
@@ -8,7 +7,6 @@ import { getContractAddresses } from "../../contracts/addresses";
 import { gramsToKg, shorten } from "../../lib/utils";
 
 export default function ValidatorQueue() {
-  const navigate = useNavigate();
   const { pendingLots, isLoading, refetch } = useLotQueue();
 
   return (
@@ -18,18 +16,6 @@ export default function ValidatorQueue() {
         <p className="text-body-sm text-on-surface-variant mb-4">
           Reviewing wool lots for LNWMGA compliance.
         </p>
-
-        <div className="flex border-b border-outline-variant mb-4">
-          <button className="px-4 py-2 text-body-md font-bold text-primary border-b-2 border-primary">
-            Pending Queue
-          </button>
-          <button
-            onClick={() => navigate("/validator/audit")}
-            className="px-4 py-2 text-body-md text-on-surface-variant"
-          >
-            Audit Log
-          </button>
-        </div>
 
         {isLoading && <p className="text-body-sm text-on-surface-variant">Loading queue…</p>}
         {!isLoading && pendingLots.length === 0 && (

@@ -1,7 +1,8 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Outlet, useLocation } from "react-router-dom";
 import RequireRole from "./components/RequireRole";
 import { Role } from "./context/RoleContext";
 import { RegisterLotProvider } from "./pages/farmer/RegisterLotContext";
+import BottomNav from "./components/nav/BottomNav";
 
 // Public
 import LandingPage from "./pages/public/LandingPage";
@@ -16,6 +17,7 @@ import WrongNetwork from "./pages/auth/WrongNetwork";
 import Unauthorized from "./pages/auth/Unauthorized";
 import FarmerOnboarding from "./pages/auth/FarmerOnboarding";
 import ValidatorPending from "./pages/auth/ValidatorPending";
+import GovernmentPending from "./pages/auth/GovernmentPending";
 import NetworkHelp from "./pages/auth/NetworkHelp";
 
 // Farmer
@@ -29,6 +31,7 @@ import QRProofOfOrigin from "./pages/farmer/QRProofOfOrigin";
 import FarmerMarketSell from "./pages/farmer/FarmerMarketSell";
 
 // Validator
+import ValidatorDashboard from "./pages/validator/ValidatorDashboard";
 import ValidatorQueue from "./pages/validator/ValidatorQueue";
 import ValidatorAuditLog from "./pages/validator/ValidatorAuditLog";
 
@@ -36,28 +39,52 @@ import ValidatorAuditLog from "./pages/validator/ValidatorAuditLog";
 import GovernmentDashboard from "./pages/government/GovernmentDashboard";
 import GovernmentNewsHub from "./pages/government/GovernmentNewsHub";
 
-function RegisterLotFlow({ children }) {
-  return <RegisterLotProvider>{children}</RegisterLotProvider>;
+// Buyer
+import BuyerDashboard from "./pages/buyer/BuyerDashboard";
+import BuyerMarketplace from "./pages/buyer/BuyerMarketplace";
+import LotPurchaseDetail from "./pages/buyer/LotPurchaseDetail";
+import BuyerPurchaseHistory from "./pages/buyer/BuyerPurchaseHistory";
+import BuyerLotVerification from "./pages/buyer/BuyerLotVerification";
+
+function RegisterLotFlow() {
+  return (
+    <RegisterLotProvider>
+      <Outlet />
+    </RegisterLotProvider>
+  );
+}
+
+function GlobalBottomNavigation() {
+  const { pathname } = useLocation();
+
+  let role = "PUBLIC";
+  if (pathname.startsWith("/farmer")) role = "FARMER";
+  else if (pathname.startsWith("/validator")) role = "VALIDATOR";
+  else if (pathname.startsWith("/government")) role = "GOVERNMENT";
+  else if (pathname.startsWith("/buyer")) role = "BUYER";
+
+  return <BottomNav role={role} />;
 }
 
 export default function App() {
   return (
-    <Routes>
-      {/* Public */}
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/verify" element={<PublicLotVerification />} />
-      <Route path="/verify/lot/:lotId" element={<PublicLotVerification />} />
+    <>
+      <Routes>
+        {/* Public */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/verify" element={<PublicLotVerification />} />
+        <Route path="/verify/lot/:lotId" element={<PublicLotVerification />} />
 
-      {/* Auth */}
-      <Route path="/splash" element={<Splash />} />
-      <Route path="/connect" element={<WalletConnect />} />
-      <Route path="/role-select" element={<RoleSelectionGate />} />
-      <Route path="/error/wrong-network" element={<WrongNetwork />} />
-      <Route path="/error/unauthorized" element={<Unauthorized />} />
-      <Route path="/onboarding/farmer" element={<FarmerOnboarding />} />
-      <Route path="/onboarding/validator" element={<ValidatorPending />} />
-      <Route path="/onboarding/government" element={<Unauthorized />} />
-      <Route path="/help/network" element={<NetworkHelp />} />
+        {/* Auth */}
+        <Route path="/splash" element={<Splash />} />
+        <Route path="/connect" element={<WalletConnect />} />
+        <Route path="/role-select" element={<RoleSelectionGate />} />
+        <Route path="/error/wrong-network" element={<WrongNetwork />} />
+        <Route path="/error/unauthorized" element={<Unauthorized />} />
+        <Route path="/onboarding/farmer" element={<FarmerOnboarding />} />
+        <Route path="/onboarding/validator" element={<ValidatorPending />} />
+        <Route path="/onboarding/government" element={<GovernmentPending />} />
+        <Route path="/help/network" element={<NetworkHelp />} />
 
       {/* Farmer (role-gated) */}
       <Route
@@ -69,25 +96,15 @@ export default function App() {
         }
       />
       <Route
-        path="/farmer/register"
         element={
           <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
-            <RegisterLotFlow>
-              <RegisterLotStep1 />
-            </RegisterLotFlow>
+            <RegisterLotFlow />
           </RequireRole>
         }
-      />
-      <Route
-        path="/farmer/register/review"
-        element={
-          <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
-            <RegisterLotFlow>
-              <RegisterLotReview />
-            </RegisterLotFlow>
-          </RequireRole>
-        }
-      />
+      >
+        <Route path="/farmer/register" element={<RegisterLotStep1 />} />
+        <Route path="/farmer/register/review" element={<RegisterLotReview />} />
+      </Route>
       <Route
         path="/farmer/register/success"
         element={
@@ -142,6 +159,14 @@ export default function App() {
         path="/validator"
         element={
           <RequireRole role={Role.VALIDATOR} redirectTo="/onboarding/validator">
+            <ValidatorDashboard />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/validator/queue"
+        element={
+          <RequireRole role={Role.VALIDATOR} redirectTo="/onboarding/validator">
             <ValidatorQueue />
           </RequireRole>
         }
@@ -159,7 +184,7 @@ export default function App() {
       <Route
         path="/government"
         element={
-          <RequireRole role={Role.GOVERNMENT} redirectTo="/error/unauthorized">
+          <RequireRole role={Role.GOVERNMENT} redirectTo="/onboarding/government">
             <GovernmentDashboard />
           </RequireRole>
         }
@@ -167,13 +192,73 @@ export default function App() {
       <Route
         path="/government/news"
         element={
-          <RequireRole role={Role.GOVERNMENT} redirectTo="/error/unauthorized">
+          <RequireRole role={Role.GOVERNMENT} redirectTo="/onboarding/government">
             <GovernmentNewsHub />
           </RequireRole>
         }
       />
 
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+      {/* Buyer (role-gated) */}
+      <Route
+        path="/buyer"
+        element={
+          <RequireRole role={Role.BUYER} redirectTo="/connect">
+            <BuyerDashboard />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/buyer/marketplace"
+        element={
+          <RequireRole role={Role.BUYER} redirectTo="/connect">
+            <BuyerMarketplace />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/buyer/lots/:lotId"
+        element={
+          <RequireRole role={Role.BUYER} redirectTo="/connect">
+            <LotPurchaseDetail />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/buyer/purchases"
+        element={
+          <RequireRole role={Role.BUYER} redirectTo="/connect">
+            <BuyerPurchaseHistory />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/buyer/news"
+        element={
+          <RequireRole role={Role.BUYER} redirectTo="/connect">
+            <GovernmentNewsHub />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/buyer/verify"
+        element={
+          <RequireRole role={Role.BUYER} redirectTo="/connect">
+            <BuyerLotVerification />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/buyer/verify/lot/:lotId"
+        element={
+          <RequireRole role={Role.BUYER} redirectTo="/connect">
+            <BuyerLotVerification />
+          </RequireRole>
+        }
+      />
+
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <GlobalBottomNavigation />
+    </>
   );
 }

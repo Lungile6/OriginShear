@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import AppLayout from "../../layouts/AppLayout";
 import { useLotQueue } from "../../hooks/useLotQueue";
 import { LotStatus, LotStatusLabel, FibreTypeLabel } from "../../contracts/HarvestLedger";
@@ -6,7 +5,6 @@ import { gramsToKg, shorten, timeAgo } from "../../lib/utils";
 import StatusChip from "../../components/ui/StatusChip";
 
 export default function ValidatorAuditLog() {
-  const navigate = useNavigate();
   const { allLots, isLoading } = useLotQueue();
 
   const decided = allLots.filter(
@@ -16,19 +14,10 @@ export default function ValidatorAuditLog() {
   return (
     <AppLayout role="VALIDATOR" title="ORIGINSHEAR">
       <div className="px-4 pt-2 pb-6">
-        <h1 className="text-headline-md font-bold">Pending Validation Queue</h1>
+        <h1 className="text-headline-md font-bold">Audit Log</h1>
         <p className="text-body-sm text-on-surface-variant mb-4">
-          Reviewing wool lots for LNWMGA compliance.
+          Completed validator decisions and lot outcomes.
         </p>
-
-        <div className="flex border-b border-outline-variant mb-4">
-          <button onClick={() => navigate("/validator")} className="px-4 py-2 text-body-md text-on-surface-variant">
-            Pending Queue
-          </button>
-          <button className="px-4 py-2 text-body-md font-bold text-primary border-b-2 border-primary">
-            Audit Log
-          </button>
-        </div>
 
         {isLoading && <p className="text-body-sm text-on-surface-variant">Loading audit log…</p>}
         {!isLoading && decided.length === 0 && (

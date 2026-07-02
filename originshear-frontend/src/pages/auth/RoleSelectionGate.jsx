@@ -62,10 +62,10 @@ const CARDS = [
     border: "border-l-role-buyer",
     iconBg: "bg-role-buyer/10 text-role-buyer",
     title: "Buyer / Verifier",
-    desc: "Scan QR codes to verify Proof of Origin — no wallet or sign-in required.",
-    role: null, // public, no auth needed
-    path: "/verify",
-    pendingPath: "/verify",
+    desc: "Browse validated lots, purchase wool & mohair, and verify proof of origin.",
+    role: Role.BUYER,
+    path: "/buyer",
+    pendingPath: "/connect",
   },
 ];
 

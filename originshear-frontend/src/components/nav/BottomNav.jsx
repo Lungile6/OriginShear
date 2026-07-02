@@ -61,6 +61,11 @@ const ICONS = {
 };
 
 const NAV_BY_ROLE = {
+  PUBLIC: [
+    { to: "/", label: "Home", st: "Lae", icon: "home" },
+    { to: "/verify", label: "Verify", st: "Netefatsa", icon: "queue" },
+    { to: "/connect", label: "Connect", st: "Hokela", icon: "profile" },
+  ],
   FARMER: [
     { to: "/farmer", label: "Home", st: "Lae", icon: "home" },
     { to: "/farmer/register", label: "Register", st: "Ngolisa", icon: "register" },
@@ -69,15 +74,20 @@ const NAV_BY_ROLE = {
     { to: "/farmer/market", label: "Market", st: "Mmaraka", icon: "market" },
   ],
   VALIDATOR: [
-    { to: "/validator", label: "Queue", st: "Letlelo", icon: "queue" },
+    { to: "/validator", label: "Home", st: "Lae", icon: "home" },
+    { to: "/validator/queue", label: "Queue", st: "Letlelo", icon: "queue" },
     { to: "/validator/audit", label: "Audit Log", st: "Tlaleho", icon: "history" },
   ],
   GOVERNMENT: [
-    { to: "/government", label: "Marks", st: "Matšoao", icon: "marks" },
+    { to: "/government", label: "Home", st: "Lae", icon: "home" },
     { to: "/government/news", label: "News", st: "Litaba", icon: "news" },
   ],
   BUYER: [
-    { to: "/verify", label: "Verify", st: "Netefatsa", icon: "queue" },
+    { to: "/buyer", label: "Dashboard", st: "Lae", icon: "home" },
+    { to: "/buyer/marketplace", label: "Marketplace", st: "Mmaraka", icon: "market" },
+    { to: "/buyer/news", label: "News", st: "Litaba", icon: "news" },
+    { to: "/buyer/purchases", label: "Purchases", st: "Nalane", icon: "history" },
+    { to: "/buyer/verify", label: "Verify", st: "Netefatsa", icon: "queue" },
   ],
 };
 

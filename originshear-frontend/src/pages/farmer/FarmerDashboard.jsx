@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
 import AppLayout from "../../layouts/AppLayout";
@@ -11,10 +12,29 @@ export default function FarmerDashboard() {
   const { address } = useAccount();
   const { farmerProfile } = useRole();
   const { lots, isLoading } = useFarmerLots(address);
+  const [acknowledgedLots, setAcknowledgedLots] = useState(() => {
+    try {
+      const stored = localStorage.getItem("originshear_acknowledged_lots");
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const totalWeightKg = farmerProfile ? gramsToKg(farmerProfile.totalWeightGrams) : "0";
   const lotsRegistered = farmerProfile ? Number(farmerProfile.totalLotsRegistered) : 0;
   const pendingCount = lots.filter((l) => l.status === LotStatus.PENDING).length;
+  
+  const validatedLotsNotified = lots.filter(
+    (l) => l.status === LotStatus.VALIDATED && !acknowledgedLots.includes(l.lotId.toString())
+  );
+
+  function handleDismissNotification(lotId) {
+    const updated = [...acknowledgedLots, lotId.toString()];
+    setAcknowledgedLots(updated);
+    localStorage.setItem("originshear_acknowledged_lots", JSON.stringify(updated));
+  }
+
   const recentLots = lots.slice(0, 3);
 
   return (
@@ -74,6 +94,45 @@ export default function FarmerDashboard() {
               <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </Link>
+        </section>
+      )}
+
+      {/* Validated Lot Notifications */}
+      {validatedLotsNotified.length > 0 && (
+        <section className="px-4 mt-4 space-y-3">
+          {validatedLotsNotified.map((lot) => (
+            <div
+              key={lot.lotId.toString()}
+              className="bg-primary-container text-on-primary-container p-4 rounded-xl flex items-start gap-3 border border-primary/20 shadow-sm"
+            >
+              <span className="bg-primary text-on-primary rounded-full p-2 flex items-center justify-center shrink-0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <div className="flex-1">
+                <p className="font-bold text-body-md">
+                  Lot #{lot.lotId.toString()} has been validated!
+                </p>
+                <p className="text-label-sm">Loto #{lot.lotId.toString()} e netefalitsoe!</p>
+                <div className="flex gap-4 mt-2">
+                  <Link
+                    to={`/farmer/lots/${lot.lotId}/qr`}
+                    className="text-label-sm font-bold text-primary underline"
+                  >
+                    View QR Proof / Sheba QR
+                  </Link>
+                  <button
+                    onClick={() => handleDismissNotification(lot.lotId)}
+                    className="text-label-sm font-bold text-on-surface-variant/80 hover:text-on-surface"
+                  >
+                    Dismiss / Hlakola
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </section>
       )}
 
