@@ -4,6 +4,7 @@
 import { createContext, useContext, useMemo } from "react";
 import { useAccount, useChainId, useReadContract, useReadContracts } from "wagmi";
 import { HARVEST_LEDGER_ABI } from "../contracts/HarvestLedger";
+import { INDUSTRY_MARK_REGISTRY_ABI } from "../contracts/IndustryMarkRegistry";
 import { getContractAddresses } from "../contracts/addresses";
 
 const RoleContext = createContext(null);
@@ -11,15 +12,15 @@ const RoleContext = createContext(null);
 export const Role = {
   FARMER: "FARMER",
   VALIDATOR: "VALIDATOR",
-  GOVERNMENT: "GOVERNMENT", // DEFAULT_ADMIN_ROLE doubles as GOV_PUBLISHER for now
+  GOVERNMENT: "GOVERNMENT", // IndustryMarkRegistry GOVERNMENT_ROLE
+  BUYER: "BUYER",
   NONE: "NONE",
 };
 
 /**
- * Resolves the connected wallet's on-chain role(s) against HarvestLedger.
- * A wallet can in principle hold multiple roles (e.g. the deployer holds
- * both DEFAULT_ADMIN_ROLE and VALIDATOR_ROLE) — `roles` exposes all of
- * them, while `primaryRole` picks the highest-privilege one for routing.
+ * Resolves the connected wallet's on-chain role(s).
+ * Government access requires GOVERNMENT_ROLE on IndustryMarkRegistry.
+ * Farmer/Validator roles are checked on HarvestLedger.
  */
 export function RoleProvider({ children }) {
   const { address, isConnected } = useAccount();
@@ -30,30 +31,39 @@ export function RoleProvider({ children }) {
     ? { address: addresses.harvestLedger, abi: HARVEST_LEDGER_ABI }
     : null;
 
+  const registryContract = addresses
+    ? { address: addresses.industryMarkRegistry, abi: INDUSTRY_MARK_REGISTRY_ABI }
+    : null;
+
   const { data: roleHashes } = useReadContracts({
-    contracts: ledgerContract
-      ? [
-          { ...ledgerContract, functionName: "FARMER_ROLE" },
-          { ...ledgerContract, functionName: "VALIDATOR_ROLE" },
-          { ...ledgerContract, functionName: "DEFAULT_ADMIN_ROLE" },
-        ]
-      : [],
-    query: { enabled: Boolean(ledgerContract) },
+    contracts:
+      ledgerContract && registryContract
+        ? [
+            { ...ledgerContract, functionName: "FARMER_ROLE" },
+            { ...ledgerContract, functionName: "VALIDATOR_ROLE" },
+            { ...ledgerContract, functionName: "DEFAULT_ADMIN_ROLE" },
+            { ...registryContract, functionName: "GOVERNMENT_ROLE" },
+          ]
+        : [],
+    query: { enabled: Boolean(ledgerContract && registryContract) },
   });
 
-  const [farmerRoleHash, validatorRoleHash, adminRoleHash] =
+  const [farmerRoleHash, validatorRoleHash, adminRoleHash, govRoleHash] =
     roleHashes?.map((r) => r.result) ?? [];
 
   const { data: roleChecks, isLoading } = useReadContracts({
     contracts:
-      ledgerContract && address && farmerRoleHash
+      ledgerContract && registryContract && address && farmerRoleHash && govRoleHash
         ? [
             { ...ledgerContract, functionName: "hasRole", args: [farmerRoleHash, address] },
             { ...ledgerContract, functionName: "hasRole", args: [validatorRoleHash, address] },
             { ...ledgerContract, functionName: "hasRole", args: [adminRoleHash, address] },
+            { ...registryContract, functionName: "hasRole", args: [govRoleHash, address] },
           ]
         : [],
-    query: { enabled: Boolean(ledgerContract && address && farmerRoleHash) },
+    query: {
+      enabled: Boolean(ledgerContract && registryContract && address && farmerRoleHash && govRoleHash),
+    },
   });
 
   const { data: farmerProfile } = useReadContract({
@@ -64,7 +74,8 @@ export function RoleProvider({ children }) {
   });
 
   const value = useMemo(() => {
-    const [isFarmer, isValidator, isAdmin] = roleChecks?.map((r) => r.result) ?? [
+    const [isFarmer, isValidator, isAdmin, isGovPublisher] = roleChecks?.map((r) => r.result) ?? [
+      false,
       false,
       false,
       false,
@@ -73,12 +84,11 @@ export function RoleProvider({ children }) {
     const roles = [];
     if (isFarmer) roles.push(Role.FARMER);
     if (isValidator) roles.push(Role.VALIDATOR);
-    if (isAdmin) roles.push(Role.GOVERNMENT);
+    if (isGovPublisher) roles.push(Role.GOVERNMENT);
+    if (isConnected) roles.push(Role.BUYER);
 
-    // Priority for routing when a wallet holds multiple roles: government
-    // (admin) screens are the most privileged, then validator, then farmer.
     let primaryRole = Role.NONE;
-    if (isAdmin) primaryRole = Role.GOVERNMENT;
+    if (isGovPublisher) primaryRole = Role.GOVERNMENT;
     else if (isValidator) primaryRole = Role.VALIDATOR;
     else if (isFarmer) primaryRole = Role.FARMER;
 
@@ -93,6 +103,7 @@ export function RoleProvider({ children }) {
       isFarmer,
       isValidator,
       isAdmin,
+      isGovPublisher,
       farmerProfile: farmerProfile
         ? {
             wallet: farmerProfile[0],

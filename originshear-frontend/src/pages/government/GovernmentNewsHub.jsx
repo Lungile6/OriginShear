@@ -1,40 +1,19 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import AppLayout from "../../layouts/AppLayout";
-
-const SEED_NEWS = [
-  {
-    id: 1,
-    tag: "Price Alert (Tsebiso ea Theko)",
-    tagColor: "bg-role-government/15 text-role-government",
-    date: "Oct 24, 2025",
-    title: "Mohair Grade A floor price set at cUSD 18.50/kg",
-    cta: "Read Details (Bala Lintlafatso)",
-  },
-  {
-    id: 2,
-    tag: "Market Notice (Tsebiso ea Maraka)",
-    tagColor: "bg-secondary-container text-on-secondary-container",
-    date: "Oct 22, 2025",
-    title: "Quthing collection point open Tuesdays and Thursdays",
-    body: "Operations resume at standard hours (08:00-16:30) for shearing season preparation.",
-    cta: "View Schedule (Sheba Lenane)",
-  },
-  {
-    id: 3,
-    tag: "Regulation (Melao)",
-    tagColor: "bg-primary-container text-on-primary-container",
-    date: "Oct 20, 2025",
-    title: "New digital PoO requirements at Maseru Bridge",
-    cta: "View Compliance Guide (Bala Tataiso)",
-  },
-];
+import { useNewsFeed } from "../../hooks/useNewsFeed";
 
 export default function GovernmentNewsHub() {
-  const [news, setNews] = useState(SEED_NEWS);
+  const location = useLocation();
+  const isGovernment = location.pathname.startsWith("/government");
+  const isBuyer = location.pathname.startsWith("/buyer");
+  const role = isGovernment ? "GOVERNMENT" : isBuyer ? "BUYER" : "FARMER";
+
+  const { news, isLoading, error, publishNews } = useNewsFeed();
   const [lang, setLang] = useState("EN");
 
   return (
-    <AppLayout role="GOVERNMENT" title="ORIGINSHEAR">
+    <AppLayout role={role} title="ORIGINSHEAR">
       <div className="px-4 pt-2 pb-8">
         <div className="flex justify-between items-start mb-1">
           <h1 className="text-headline-md font-bold">Ministry of Agriculture · Lesotho</h1>
@@ -62,12 +41,21 @@ export default function GovernmentNewsHub() {
             <path d="M3 11l18-7-7 18-2-8-9-3Z" strokeLinejoin="round" strokeLinecap="round" />
           </svg>
           <p className="text-body-sm text-on-secondary-container">
-            Official bulletins for registered wool and mohair producers (Litsebiso tsa semmuso
-            bakeng sa bahlahisi ba ngolisitsoeng).
+            Official bulletins for producers, buyers, and wool/mohair sector stakeholders
+            (Litsebiso tsa semmuso bakeng sa bahlahisi, bareki, le bohle ba amehang indastering).
           </p>
         </div>
 
         <div className="space-y-4">
+          {isLoading && (
+            <p className="text-body-sm text-on-surface-variant">Loading bulletins…</p>
+          )}
+          {!isLoading && news.length === 0 && (
+            <p className="text-body-sm text-on-surface-variant">
+              No bulletins published yet.
+            </p>
+          )}
+          {error && <p className="text-body-sm text-error">{error}</p>}
           {news.map((item) => (
             <div key={item.id} className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-4">
               <div className="flex justify-between items-start mb-2">
@@ -93,7 +81,7 @@ export default function GovernmentNewsHub() {
         </p>
       </div>
 
-      <ComposeFab onPublish={(entry) => setNews((prev) => [entry, ...prev])} />
+      {isGovernment && <ComposeFab onPublish={publishNews} />}
     </AppLayout>
   );
 }
@@ -103,21 +91,29 @@ function ComposeFab({ onPublish }) {
   const [title, setTitle] = useState("");
   const [tag, setTag] = useState("Market Notice (Tsebiso ea Maraka)");
   const [body, setBody] = useState("");
+  const [publishing, setPublishing] = useState(false);
+  const [error, setError] = useState("");
 
-  function handlePublish() {
+  async function handlePublish() {
     if (!title) return;
-    onPublish({
-      id: crypto.randomUUID(),
-      tag,
-      tagColor: "bg-secondary-container text-on-secondary-container",
-      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      title,
-      body,
-      cta: "Read Details (Bala Lintlafatso)",
-    });
-    setTitle("");
-    setBody("");
-    setOpen(false);
+    setPublishing(true);
+    setError("");
+    try {
+      await onPublish({
+        tag,
+        tagColor: "bg-secondary-container text-on-secondary-container",
+        title,
+        body,
+        cta: "Read Details (Bala Lintlafatso)",
+      });
+      setTitle("");
+      setBody("");
+      setOpen(false);
+    } catch (err) {
+      setError(err?.message || "Failed to publish announcement");
+    } finally {
+      setPublishing(false);
+    }
   }
 
   return (
@@ -167,10 +163,12 @@ function ComposeFab({ onPublish }) {
 
             <button
               onClick={handlePublish}
-              className="w-full h-14 rounded-lg bg-primary text-on-primary font-semibold mb-2"
+              disabled={publishing}
+              className="w-full h-14 rounded-lg bg-primary text-on-primary font-semibold mb-2 disabled:opacity-60"
             >
-              Publish Bulletin
+              {publishing ? "Publishing..." : "Publish Bulletin"}
             </button>
+            {error && <p className="text-body-sm text-error mb-2">{error}</p>}
             <button
               onClick={() => setOpen(false)}
               className="w-full h-12 rounded-lg border border-outline-variant font-semibold"

@@ -1,22 +1,58 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useChainId, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { isAddress } from "viem";
 import AppLayout from "../../layouts/AppLayout";
 import { useLotQueue } from "../../hooks/useLotQueue";
+import { useIndustryMarks } from "../../hooks/useIndustryMarks";
+import { useFarmerMarks } from "../../hooks/useFarmerMarks";
 import { LotStatus } from "../../contracts/HarvestLedger";
+import { INDUSTRY_MARK_REGISTRY_ABI, MarkTypeLabel } from "../../contracts/IndustryMarkRegistry";
+import { getContractAddresses } from "../../contracts/addresses";
+import { shorten } from "../../lib/utils";
+import BilingualText from "../../components/ui/BilingualText";
 
 /**
- * NOTE: ORIGINSHEAR's current contracts (HarvestLedger, FarmerMarket,
- * ProofOfOriginVerifier) don't yet implement an on-chain "Industry Mark"
- * registry (ear tags / branding / tattoo certification with expiry) —
- * that's a separate future contract per the project docs' GOV_PUBLISHER
- * role. This screen surfaces real validated/rejected lot totals from
- * HarvestLedger (the donut + headline counts) and uses local state for
- * mark issuance until that contract exists; swap the local state for a
- * real useWriteContract call once it's deployed.
+ * Government Mark Management Dashboard.
+ * Displays on-chain wool/mohair lot statuses from HarvestLedger
+ * and wires the Mark Issuance form to write to the IndustryMarkRegistry contract.
  */
 export default function GovernmentDashboard() {
-  const { allLots, isLoading } = useLotQueue();
-  const [form, setForm] = useState({ farmerQuery: "", markType: "Visual Ear Tag (Lesotho Standard)", expiry: "" });
-  const [issuedMarks, setIssuedMarks] = useState([]);
+  const { allLots, isLoading: isLoadingQueue } = useLotQueue();
+  const { marks: onChainMarks, isLoading: isLoadingMarks, refetch: refetchMarks } = useIndustryMarks();
+  const chainId = useChainId();
+  const addresses = getContractAddresses(chainId);
+
+  const [form, setForm] = useState({
+    farmerWallet: "",
+    farmerId: "",
+    markTypeIndex: 0,
+    description: "",
+    expiryDate: "",
+  });
+
+  const farmerWalletValid = isAddress(form.farmerWallet);
+  const {
+    marks: farmerMarks,
+    isLoading: isLoadingFarmerMarks,
+    refetch: refetchFarmerMarks,
+  } = useFarmerMarks(farmerWalletValid ? form.farmerWallet : null);
+
+  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  useEffect(() => {
+    if (isSuccess) {
+      refetchMarks();
+      if (farmerWalletValid) refetchFarmerMarks();
+      setForm({
+        farmerWallet: "",
+        farmerId: "",
+        markTypeIndex: 0,
+        description: "",
+        expiryDate: "",
+      });
+    }
+  }, [isSuccess, refetchMarks, refetchFarmerMarks, farmerWalletValid]);
 
   const validatedCount = allLots.filter((l) => l.status === LotStatus.VALIDATED).length;
   const rejectedCount = allLots.filter((l) => l.status === LotStatus.REJECTED).length;
@@ -25,26 +61,43 @@ export default function GovernmentDashboard() {
 
   function handleIssue(e) {
     e.preventDefault();
-    if (!form.farmerQuery) return;
-    setIssuedMarks((prev) => [
-      { id: crypto.randomUUID(), ...form, issuedAt: new Date() },
-      ...prev,
-    ]);
-    setForm({ ...form, farmerQuery: "", expiry: "" });
+    if (!addresses?.industryMarkRegistry || !form.farmerWallet || !form.farmerId || !form.expiryDate) return;
+
+    const expiresTimestamp = Math.floor(new Date(form.expiryDate).getTime() / 1000);
+
+    writeContract({
+      address: addresses.industryMarkRegistry,
+      abi: INDUSTRY_MARK_REGISTRY_ABI,
+      functionName: "issueMark",
+      args: [
+        form.farmerWallet,
+        form.farmerId,
+        Number(form.markTypeIndex),
+        form.description || "Official government mark",
+        BigInt(expiresTimestamp),
+        "", // metadataURI
+      ],
+    });
   }
+
+  const busy = isPending || isConfirming;
 
   return (
     <AppLayout role="GOVERNMENT" title="ORIGINSHEAR">
       <div className="px-4 pt-2 pb-8">
-        <h1 className="text-headline-md font-bold">Mark Management Dashboard</h1>
+        <h1 className="text-headline-md font-bold">
+          <BilingualText en="Mark Management Dashboard" st="Matšoao a Mmuso" size="headline-md" />
+        </h1>
         <p className="text-body-sm text-on-surface-variant mb-4">
           Admin Control Panel — Quthing District
         </p>
 
         <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-5 mb-4">
-          <p className="text-label-sm text-on-surface-variant uppercase">Total Marks Issued (Kakaretso)</p>
-          <p className="text-headline-xl font-bold text-primary">{(allLots.length * 7).toLocaleString()}</p>
-          <p className="text-body-sm text-primary mb-4">↗ +12% vs last month</p>
+          <p className="text-label-sm text-on-surface-variant uppercase">
+            <BilingualText en="Total On-Chain Marks Issued" st="Matšoao Ohle a Kentseng" size="label-sm" />
+          </p>
+          <p className="text-headline-xl font-bold text-primary">{onChainMarks.length}</p>
+          <p className="text-body-sm text-primary mb-4">↗ Registered on Celo Ledger</p>
 
           <div className="flex items-center gap-4">
             <DonutChart validated={validatedCount} rejected={rejectedCount} pending={pendingCount} total={total} />
@@ -63,7 +116,7 @@ export default function GovernmentDashboard() {
               {pendingCount} Pending
             </span>
           </div>
-          {isLoading && <p className="text-body-sm text-on-surface-variant">Loading…</p>}
+          {isLoadingQueue && <p className="text-body-sm text-on-surface-variant">Loading queue stats…</p>}
           <div className="grid grid-cols-3 gap-3 text-center">
             <StatBox value={validatedCount} label="Validated" color="text-primary" />
             <StatBox value={pendingCount} label="Pending" color="text-role-validator" />
@@ -73,65 +126,151 @@ export default function GovernmentDashboard() {
 
         <form
           onSubmit={handleIssue}
-          className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-5"
+          className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-5 mb-6"
         >
-          <h2 className="font-bold flex items-center gap-2 mb-4">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 text-primary">
-              <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z" strokeLinejoin="round" />
-              <path d="M14 3v6h6M9 13h6M9 17h4" strokeLinecap="round" />
+          <h2 className="font-bold flex items-center gap-2 mb-4 text-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+              <path d="M12 3 4 6.5V12c0 5 3.4 8 8 9 4.6-1 8-4 8-9V6.5z" strokeLinejoin="round" />
             </svg>
-            Issue a Mark (Ngolisa Loto)
+            <BilingualText en="Issue an Industry Mark" st="Fana ka Letšoao la Semmuso" size="body-lg" />
           </h2>
 
-          <label className="block text-body-sm font-semibold mb-2">Farmer ID (Nomoro ea Sehloho)</label>
+          <label className="block text-body-sm font-semibold mb-1">Farmer Wallet Address (Aterese ea Wallet)</label>
           <input
-            value={form.farmerQuery}
-            onChange={(e) => setForm({ ...form, farmerQuery: e.target.value })}
-            placeholder="Search by National ID or Phone…"
+            value={form.farmerWallet}
+            onChange={(e) => setForm({ ...form, farmerWallet: e.target.value })}
+            placeholder="0x…"
+            required
+            disabled={busy}
+            className="w-full h-12 rounded-lg border border-outline-variant bg-surface-container px-4 mb-2 text-body-sm focus:border-primary focus:border-2 outline-none font-mono"
+          />
+          {farmerWalletValid && (
+            <div className="mb-4 bg-surface-container rounded-lg p-3">
+              <p className="text-label-sm text-on-surface-variant uppercase mb-2">
+                Existing Marks for Farmer (Matšoao a Molemi)
+              </p>
+              {isLoadingFarmerMarks && (
+                <p className="text-body-sm text-on-surface-variant">Loading farmer marks…</p>
+              )}
+              {!isLoadingFarmerMarks && farmerMarks.length === 0 && (
+                <p className="text-body-sm text-on-surface-variant">No on-chain marks for this wallet yet.</p>
+              )}
+              {!isLoadingFarmerMarks &&
+                farmerMarks.map((m) => (
+                  <div key={m.markId.toString()} className="text-body-sm py-1 border-b border-outline-variant/40 last:border-0">
+                    <span className="font-semibold">{MarkTypeLabel[m.markType]}</span>
+                    <span className="text-on-surface-variant"> · ID #{m.markId.toString()}</span>
+                  </div>
+                ))}
+            </div>
+          )}
+          {!farmerWalletValid && form.farmerWallet && (
+            <p className="text-label-sm text-error mb-4">Enter a valid wallet address (0x…)</p>
+          )}
+
+          <label className="block text-body-sm font-semibold mb-1">Farmer ID (Nomoro ea Molemi)</label>
+          <input
+            value={form.farmerId}
+            onChange={(e) => setForm({ ...form, farmerId: e.target.value })}
+            placeholder="e.g. LSO-12345"
+            required
+            disabled={busy}
             className="w-full h-12 rounded-lg border border-outline-variant bg-surface-container px-4 mb-4 text-body-sm focus:border-primary focus:border-2 outline-none"
           />
 
-          <label className="block text-body-sm font-semibold mb-2">Mark Type (Mofuta oa Loto)</label>
+          <label className="block text-body-sm font-semibold mb-1">Mark Type (Mofuta oa Letšoao)</label>
           <select
-            value={form.markType}
-            onChange={(e) => setForm({ ...form, markType: e.target.value })}
-            className="w-full h-12 rounded-lg border border-outline-variant bg-surface-container px-4 mb-4 text-body-sm focus:border-primary focus:border-2 outline-none appearance-none"
+            value={form.markTypeIndex}
+            onChange={(e) => setForm({ ...form, markTypeIndex: Number(e.target.value) })}
+            disabled={busy}
+            className="w-full h-12 rounded-lg border border-outline-variant bg-surface-container px-4 mb-4 text-body-sm focus:border-primary focus:border-2 outline-none appearance-none font-semibold"
           >
-            <option>Visual Ear Tag (Lesotho Standard)</option>
-            <option>Branding</option>
-            <option>Tattoo</option>
+            <option value={0}>{MarkTypeLabel[0]}</option>
+            <option value={1}>{MarkTypeLabel[1]}</option>
+            <option value={2}>{MarkTypeLabel[2]}</option>
           </select>
 
-          <label className="block text-body-sm font-semibold mb-2">Expiry Date (Letsatsi la ho fela)</label>
+          <label className="block text-body-sm font-semibold mb-1">Description / Location Description</label>
+          <input
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            placeholder="e.g. Left ear visual tag, green standard"
+            disabled={busy}
+            className="w-full h-12 rounded-lg border border-outline-variant bg-surface-container px-4 mb-4 text-body-sm focus:border-primary focus:border-2 outline-none"
+          />
+
+          <label className="block text-body-sm font-semibold mb-1">Expiry Date (Letsatsi la ho Fela)</label>
           <input
             type="date"
-            value={form.expiry}
-            onChange={(e) => setForm({ ...form, expiry: e.target.value })}
+            value={form.expiryDate}
+            onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
+            required
+            disabled={busy}
             className="w-full h-12 rounded-lg border border-outline-variant bg-surface-container px-4 mb-5 text-body-sm focus:border-primary focus:border-2 outline-none"
           />
 
+          {error && (
+            <p className="text-body-sm text-error mb-4">
+              {error.shortMessage || error.message}
+            </p>
+          )}
+
           <button
             type="submit"
-            className="w-full h-14 rounded-lg bg-primary text-on-primary font-semibold flex items-center justify-center gap-2"
+            disabled={busy || !form.farmerWallet || !form.farmerId || !form.expiryDate}
+            className="w-full h-14 rounded-lg bg-primary text-on-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-              <circle cx="12" cy="12" r="9" />
-              <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Issue Mark (Etsa Loto)
+            {busy ? (
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+                <circle cx="12" cy="12" r="9" />
+                <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+            {isPending ? "Confirm in Wallet..." : isConfirming ? "Writing On-Chain..." : "Issue Mark (Etsa Letšoao)"}
           </button>
         </form>
 
-        {issuedMarks.length > 0 && (
-          <div className="mt-4 space-y-2">
-            {issuedMarks.map((m) => (
-              <div key={m.id} className="bg-surface-container rounded-lg p-3 text-body-sm">
-                <span className="font-semibold">{m.farmerQuery}</span> — {m.markType}
-                {m.expiry && <span className="text-on-surface-variant"> · expires {m.expiry}</span>}
-              </div>
-            ))}
-          </div>
+        <h2 className="text-label-lg text-primary uppercase tracking-widest mb-3">
+          On-Chain Issued Marks (Matšoao a Tsoileng)
+        </h2>
+        {isLoadingMarks && <p className="text-body-sm text-on-surface-variant">Loading marks registry...</p>}
+        {!isLoadingMarks && onChainMarks.length === 0 && (
+          <p className="text-body-sm text-on-surface-variant font-medium">No marks registered on-chain yet.</p>
         )}
+        <div className="space-y-3">
+          {onChainMarks.map((m) => (
+            <div key={m.markId.toString()} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <p className="text-label-sm text-on-surface-variant uppercase font-mono">Mark ID #{m.markId.toString()}</p>
+                  <p className="font-bold text-body-md text-on-surface">{MarkTypeLabel[m.markType]}</p>
+                </div>
+                <span className="bg-primary/10 text-primary rounded-full px-2.5 py-0.5 text-[10px] font-bold">
+                  Active
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-body-sm text-on-surface-variant">
+                <div>
+                  <span className="text-[10px] uppercase font-bold block">Farmer ID</span>
+                  <span className="font-semibold text-on-surface">{m.farmerId}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold block">Farmer Wallet</span>
+                  <span className="font-semibold text-on-surface">{shorten(m.farmer)}</span>
+                </div>
+                <div className="col-span-2 mt-1">
+                  <span className="text-[10px] uppercase font-bold block">Details</span>
+                  <span className="font-semibold text-on-surface">{m.description}</span>
+                </div>
+                <div className="col-span-2 mt-1 border-t border-outline-variant/40 pt-2 text-[10px]">
+                  <span>Issued By: {shorten(m.issuedBy)} · Expires: {new Date(Number(m.expiresAt) * 1000).toLocaleDateString()}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </AppLayout>
   );
