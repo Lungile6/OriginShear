@@ -53,15 +53,15 @@ Fill in `.env` with your deployed contract addresses. From the repo root,
 after deploying contracts, run:
 
 ```bash
-npm run sync:addresses alfajores
+npm run sync:addresses celoSepolia
 ```
 
 Or paste values manually from `originshear-contracts/deployments.<network>.json`:
 
 ```
-VITE_ALFAJORES_HARVEST_LEDGER=0x...
-VITE_ALFAJORES_FARMER_MARKET=0x...
-VITE_ALFAJORES_VERIFIER=0x...
+VITE_CELO_SEPOLIA_HARVEST_LEDGER=0x...
+VITE_CELO_SEPOLIA_FARMER_MARKET=0x...
+VITE_CELO_SEPOLIA_VERIFIER=0x...
 ```
 
 ```bash

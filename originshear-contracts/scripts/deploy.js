@@ -58,14 +58,70 @@ async function main() {
   const verifierAddress = await verifier.getAddress();
   console.log(`ProofOfOriginVerifier deployed at: ${verifierAddress}`);
 
-  // 5. Configure roles
+  // 5. Deploy IndustryMarkRegistry
+  console.log("Deploying IndustryMarkRegistry...");
+  const IndustryMarkRegistry = await ethers.getContractFactory("IndustryMarkRegistry");
+  const markRegistry = await IndustryMarkRegistry.deploy(deployer.address);
+  await markRegistry.waitForDeployment();
+  const markRegistryAddress = await markRegistry.getAddress();
+  console.log(`IndustryMarkRegistry deployed at: ${markRegistryAddress}`);
+
+  // 6. Deploy NewsBulletin
+  console.log("Deploying NewsBulletin...");
+  const NewsBulletin = await ethers.getContractFactory("NewsBulletin");
+  const newsBulletin = await NewsBulletin.deploy(deployer.address);
+  await newsBulletin.waitForDeployment();
+  const newsBulletinAddress = await newsBulletin.getAddress();
+  console.log(`NewsBulletin deployed at: ${newsBulletinAddress}`);
+
+  // 7. Deploy GasSubsidyPool
+  console.log("Deploying GasSubsidyPool...");
+  const GasSubsidyPool = await ethers.getContractFactory("GasSubsidyPool");
+  const subsidyPool = await GasSubsidyPool.deploy(tokenAddress, deployer.address);
+  await subsidyPool.waitForDeployment();
+  const subsidyPoolAddress = await subsidyPool.getAddress();
+  console.log(`GasSubsidyPool deployed at: ${subsidyPoolAddress}`);
+
+  // 8. Deploy DisputeResolution
+  console.log("Deploying DisputeResolution...");
+  const DisputeResolution = await ethers.getContractFactory("DisputeResolution");
+  const disputeResolution = await DisputeResolution.deploy(tokenAddress, marketAddress, ledgerAddress, deployer.address);
+  await disputeResolution.waitForDeployment();
+  const disputeResolutionAddress = await disputeResolution.getAddress();
+  console.log(`DisputeResolution deployed at: ${disputeResolutionAddress}`);
+
+  // 9. Deploy ReputationSystem
+  console.log("Deploying ReputationSystem...");
+  const ReputationSystem = await ethers.getContractFactory("ReputationSystem");
+  const reputationSystem = await ReputationSystem.deploy(deployer.address);
+  await reputationSystem.waitForDeployment();
+  const reputationSystemAddress = await reputationSystem.getAddress();
+  console.log(`ReputationSystem deployed at: ${reputationSystemAddress}`);
+
+  // 10. Deploy PriceOracle
+  console.log("Deploying PriceOracle...");
+  const PriceOracle = await ethers.getContractFactory("PriceOracle");
+  const priceOracle = await PriceOracle.deploy(tokenAddress, deployer.address);
+  await priceOracle.waitForDeployment();
+  const priceOracleAddress = await priceOracle.getAddress();
+  console.log(`PriceOracle deployed at: ${priceOracleAddress}`);
+
+  // 11. Deploy MultiSigTreasury
+  console.log("Deploying MultiSigTreasury...");
+  const MultiSigTreasury = await ethers.getContractFactory("MultiSigTreasury");
+  const treasury = await MultiSigTreasury.deploy(tokenAddress, deployer.address, [deployer.address]);
+  await treasury.waitForDeployment();
+  const treasuryAddress = await treasury.getAddress();
+  console.log(`MultiSigTreasury deployed at: ${treasuryAddress}`);
+
+  // 12. Configure roles
   console.log("\nRoles configured:");
   console.log(`  DEFAULT_ADMIN_ROLE -> ${deployer.address}`);
   console.log(`  VALIDATOR_ROLE     -> ${deployer.address}`);
   console.log("  (grant FARMER_ROLE per-farmer via registerFarmer())");
   console.log("  (grant additional VALIDATOR_ROLE via grantRole() as needed)");
 
-  // 6. Save addresses
+  // 13. Save addresses
   const deployment = {
     network,
     deployer: deployer.address,
@@ -73,6 +129,13 @@ async function main() {
     HarvestLedger: ledgerAddress,
     FarmerMarket: marketAddress,
     ProofOfOriginVerifier: verifierAddress,
+    IndustryMarkRegistry: markRegistryAddress,
+    NewsBulletin: newsBulletinAddress,
+    GasSubsidyPool: subsidyPoolAddress,
+    DisputeResolution: disputeResolutionAddress,
+    ReputationSystem: reputationSystemAddress,
+    PriceOracle: priceOracleAddress,
+    MultiSigTreasury: treasuryAddress,
     timestamp: new Date().toISOString(),
   };
 

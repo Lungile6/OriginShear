@@ -40,6 +40,13 @@ const updates = {
   [`${prefix}_HARVEST_LEDGER`]: deployment.HarvestLedger,
   [`${prefix}_FARMER_MARKET`]: deployment.FarmerMarket,
   [`${prefix}_VERIFIER`]: deployment.ProofOfOriginVerifier,
+  [`${prefix}_INDUSTRY_MARK_REGISTRY`]: deployment.IndustryMarkRegistry,
+  [`${prefix}_NEWS_BULLETIN`]: deployment.NewsBulletin,
+  [`${prefix}_GAS_SUBSIDY_POOL`]: deployment.GasSubsidyPool,
+  [`${prefix}_DISPUTE_RESOLUTION`]: deployment.DisputeResolution,
+  [`${prefix}_REPUTATION_SYSTEM`]: deployment.ReputationSystem,
+  [`${prefix}_PRICE_ORACLE`]: deployment.PriceOracle,
+  [`${prefix}_MULTI_SIG_TREASURY`]: deployment.MultiSigTreasury,
 };
 
 if (prefix === "VITE_LOCAL") {

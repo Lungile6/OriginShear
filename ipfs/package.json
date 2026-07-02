@@ -1,0 +1,13 @@
+{
+  "name": "originshear-ipfs",
+  "version": "1.0.0",
+  "description": "IPFS integration for ORIGINSHEAR metadata storage",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node test/test.js"
+  },
+  "dependencies": {
+    "ipfs-http-client": "^60.0.1",
+    "dotenv": "^16.4.0"
+  }
+}

@@ -35,11 +35,14 @@ npm run dev
 # Compile
 npm run compile
 
-# Deploy to Alfajores testnet (set PRIVATE_KEY in originshear-contracts/.env first)
-npm run deploy:celo sepolia
+# Deploy to Celo Sepolia testnet (set PRIVATE_KEY in originshear-contracts/.env first)
+npm run deploy:celo-sepolia
+
+# Deploy to local Hardhat node
+npm run deploy:local
 
 # Copy deployed addresses into originshear-frontend/.env
-npm run sync:addresses sepolia
+npm run sync:addresses celoSepolia
 ```
 
 See [originshear-contracts/README.md](./originshear-contracts/README.md) for full contract documentation.
@@ -58,8 +61,8 @@ See [originshear-frontend/README.md](./originshear-frontend/README.md) for scree
 
 1. Change contracts in `originshear-contracts/`
 2. Run `npm test`
-3. Deploy with `npm run deploy:celo sepolia`
-4. Run `npm run sync:addresses sepolia`
+3. Deploy with `npm run deploy:celo-sepolia`
+4. Run `npm run sync:addresses celoSepolia`
 5. Run `npm run dev` and test the app against the new addresses
 
 ## License

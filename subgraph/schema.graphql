@@ -1,0 +1,88 @@
+type Farmer @entity {
+  id: ID!
+  wallet: Bytes!
+  farmerId: String!
+  district: String!
+  active: Boolean!
+  totalLotsRegistered: BigInt!
+  totalWeightGrams: BigInt!
+  lots: [Lot!]! @derivedFrom(field: "farmer")
+  offers: [Offer!]! @derivedFrom(field: "farmer")
+  marks: [Mark!]! @derivedFrom(field: "farmer")
+  createdAt: BigInt!
+}
+
+type Lot @entity {
+  id: ID!
+  lotId: BigInt!
+  farmer: Farmer!
+  fibreType: Int!
+  grade: Int!
+  weightGrams: BigInt!
+  gpsZone: String!
+  seasonYear: String!
+  proofOfOrigin: Bytes!
+  status: Int!
+  registeredAt: BigInt!
+  validatedAt: BigInt
+  validatedBy: Bytes
+  metadataURI: String
+  offer: Offer
+  createdAt: BigInt!
+}
+
+type Validation @entity {
+  id: ID!
+  lot: Lot!
+  validator: Bytes!
+  status: Int!
+  timestamp: BigInt!
+}
+
+type Offer @entity {
+  id: ID!
+  offerId: BigInt!
+  lot: Lot!
+  farmer: Farmer!
+  askPriceWei: BigInt!
+  buyer: Bytes
+  escrowAmount: BigInt!
+  status: Int!
+  listedAt: BigInt!
+  completedAt: BigInt
+  purchase: Purchase
+  payment: Payment
+  createdAt: BigInt!
+}
+
+type Purchase @entity {
+  id: ID!
+  offer: Offer!
+  buyer: Bytes!
+  amount: BigInt!
+  timestamp: BigInt!
+}
+
+type Payment @entity {
+  id: ID!
+  offer: Offer!
+  farmer: Bytes!
+  netAmount: BigInt!
+  fee: BigInt!
+  timestamp: BigInt!
+}
+
+type Mark @entity {
+  id: ID!
+  markId: BigInt!
+  farmer: Farmer!
+  farmerId: String!
+  markType: Int!
+  description: String!
+  issuedAt: BigInt!
+  expiresAt: BigInt!
+  status: Int!
+  issuedBy: Bytes!
+  metadataURI: String!
+  createdAt: BigInt!
+}

@@ -93,7 +93,7 @@ cUSD escrow marketplace for **validated** lots.
 
 - A **2% platform fee** (`platformFeeBps`, capped at 5%) is deducted on release and sent to `feeRecipient`, subsidising gas costs for rural farmers.
 - cUSD token addresses:
-  - Alfajores testnet: `0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1`
+  - Celo Sepolia testnet: `0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1`
   - Celo mainnet: `0x765DE816845861e75A25fCA122bb6898B8B1282a`
 
 ### 3. `ProofOfOriginVerifier.sol`
@@ -138,20 +138,20 @@ npx hardhat test
 
 ### 3. Get test CELO
 
-Visit the Alfajores faucet: https://faucet.celo.org/alfajores
+Visit the Celo Sepolia faucet: https://faucet.celo.org/
 
-### 4. Deploy to Alfajores testnet
+### 4. Deploy to Celo Sepolia testnet
 
 ```bash
 cp .env.example .env
 # edit .env and set PRIVATE_KEY=0x...
-npx hardhat run scripts/deploy.js --network alfajores
+npx hardhat run scripts/deploy.js --network celoSepolia
 ```
 
 ### 5. Grant additional LNWMGA validator roles
 
 ```bash
-npx hardhat console --network alfajores
+npx hardhat console --network celoSepolia
 > const ledger = await ethers.getContractAt("HarvestLedger", "0xYOUR_LEDGER_ADDRESS")
 > const VALIDATOR_ROLE = ethers.keccak256(ethers.toUtf8Bytes("VALIDATOR_ROLE"))
 > await ledger.grantRole(VALIDATOR_ROLE, "0xLNWMGA_OFFICE_WALLET")

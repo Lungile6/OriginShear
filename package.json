@@ -15,7 +15,7 @@
     "compile": "npm run compile --workspace=originshear-contracts",
     "node": "npm run node --workspace=originshear-contracts",
     "deploy:local": "npm run deploy:local --workspace=originshear-contracts",
-    "deploy:alfajores": "npm run deploy:alfajores --workspace=originshear-contracts",
+    "deploy:celo-sepolia": "npm run deploy:celo-sepolia --workspace=originshear-contracts",
     "deploy:celo": "npm run deploy:celo --workspace=originshear-contracts",
     "sync:addresses": "node scripts/sync-deployments.js"
   }
