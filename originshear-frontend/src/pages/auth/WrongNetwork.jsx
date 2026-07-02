@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAccount, useSwitchChain } from "wagmi";
-import { celoSepolia } from "../../lib/wagmiConfig";
+import { useAccount } from "wagmi";
+import { useNetworkGuard } from "../../hooks/useNetworkGuard";
 
 export default function WrongNetwork() {
   const navigate = useNavigate();
   const { chainId } = useAccount();
-  const { switchChain, isPending, error } = useSwitchChain();
+  const { fixNetwork, isSwitchingNetwork } = useNetworkGuard();
+  const [switchError, setSwitchError] = useState(null);
 
   return (
     <div className="min-h-dvh flex flex-col bg-background">
@@ -27,11 +29,15 @@ export default function WrongNetwork() {
           </p>
 
           <button
-            onClick={() => switchChain({ chainId: celoSepolia.id })}
-            disabled={isPending}
+            onClick={async () => {
+              setSwitchError(null);
+              const result = await fixNetwork();
+              if (!result.ok) setSwitchError(result.error);
+            }}
+            disabled={isSwitchingNetwork}
             className="w-full h-14 rounded-lg bg-role-validator text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
           >
-            {isPending ? (
+            {isSwitchingNetwork ? (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
             ) : (
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
@@ -65,8 +71,8 @@ export default function WrongNetwork() {
             </code>
           </div>
 
-          {error && (
-            <p className="mt-3 text-body-sm text-error">{error.message?.split("\n")[0]}</p>
+          {switchError && (
+            <p className="mt-3 text-body-sm text-error">{switchError.message?.split("\n")[0]}</p>
           )}
         </div>
       </div>

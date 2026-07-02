@@ -1,6 +1,6 @@
 import { http, createConfig } from "wagmi";
 import { celo, hardhat } from "wagmi/chains";
-import { injected } from "wagmi/connectors";
+import { injected, metaMask } from "wagmi/connectors";
 import { defineChain } from "viem";
 
 export const celoSepolia = defineChain({
@@ -24,8 +24,30 @@ export const celoSepolia = defineChain({
 export const wagmiConfig = createConfig({
   chains: [celoSepolia, celo, hardhat],
   connectors: [
-    injected({ target: "metaMask" }),
-    injected(),
+    metaMask({
+      dappMetadata: {
+        name: "ORIGINSHEAR",
+        url: typeof window !== "undefined" ? window.location.origin : "http://localhost:5173",
+      },
+      // Improves reliability when provider appears slightly after page load.
+      unstable_shimAsyncInject: 1500,
+    }),
+    injected({
+      target: {
+        id: "valora",
+        name: "Valora",
+        provider(window) {
+          const ethereum = window?.ethereum;
+          if (!ethereum) return undefined;
+          if (Array.isArray(ethereum.providers)) {
+            return ethereum.providers.find((p) => p?.isValora);
+          }
+          return ethereum.isValora ? ethereum : undefined;
+        },
+      },
+      unstable_shimAsyncInject: 1500,
+    }),
+    injected({ unstable_shimAsyncInject: 1500 }),
   ],
   transports: {
     [celoSepolia.id]: http(import.meta.env.VITE_CELO_SEPOLIA_RPC_URL || "https://celo-sepolia.g.alchemy.com/v2/guusXcuDWSTypMk8NFB4_"),

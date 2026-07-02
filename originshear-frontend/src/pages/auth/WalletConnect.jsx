@@ -1,31 +1,96 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount, useConnect } from "wagmi";
+import { useNetworkGuard } from "../../hooks/useNetworkGuard";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export default function WalletConnect() {
   const navigate = useNavigate();
-  const { isConnected } = useAccount();
+  const { isConnected, chainId } = useAccount();
   const { connectors, connect, isPending, error } = useConnect();
+  const { isWrongNetwork } = useNetworkGuard();
   const [connectingId, setConnectingId] = useState(null);
+  const [localError, setLocalError] = useState("");
 
   useEffect(() => {
-    if (isConnected) navigate("/role-select", { replace: true });
-  }, [isConnected, navigate]);
+    if (!isConnected) return;
+    if (isWrongNetwork) {
+      navigate("/error/wrong-network", { replace: true });
+      return;
+    }
+    navigate("/role-select", { replace: true });
+  }, [isConnected, isWrongNetwork, navigate]);
+
+  async function notifyWalletEvent({ event, connectorName, wallet, errorMessage }) {
+    try {
+      await fetch(`${API_BASE_URL}/api/auth/wallet-event`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event,
+          connector: connectorName,
+          wallet,
+          error: errorMessage,
+        }),
+      });
+    } catch {
+      // Silent fail: connect flow should continue even if API is unavailable.
+    }
+  }
 
   function handleConnect(connector) {
+    setLocalError("");
+
     setConnectingId(connector.uid);
+    notifyWalletEvent({
+      event: "connect_clicked",
+      connectorName: connector.name,
+    });
     connect(
       { connector },
       {
-        onError: () => setConnectingId(null),
-        onSuccess: () => navigate("/role-select", { replace: true }),
+        onError: (err) => {
+          setConnectingId(null);
+          notifyWalletEvent({
+            event: "connect_failed",
+            connectorName: connector.name,
+            errorMessage: err?.message || "Unknown wallet connection error",
+          });
+          const msg = err?.message?.toLowerCase?.() || "";
+          if (msg.includes("provider not found")) {
+            setLocalError(
+              "Wallet provider not found. Open this app in a browser with MetaMask extension, or use Valora in-app browser."
+            );
+          }
+        },
+        onSuccess: (data) => {
+          setConnectingId(null);
+          notifyWalletEvent({
+            event: "connect_success",
+            connectorName: connector.name,
+            wallet: data?.accounts?.[0],
+          });
+          navigate("/role-select", { replace: true });
+        },
       }
     );
   }
 
-  // De-duplicate the generic "injected" fallback if MetaMask is also present,
-  // and label them per the Stitch design (Valora / MetaMask).
-  const primaryConnectors = connectors.filter((c, i) => connectors.findIndex((x) => x.name === c.name) === i);
+  // Prefer explicit wallets (MetaMask first, Valora second).
+  const uniqueConnectors = connectors.filter(
+    (c, i) => connectors.findIndex((x) => x.id === c.id && x.name === c.name) === i
+  );
+  const metaMaskConnector = uniqueConnectors.find(
+    (c) =>
+      c.id === "metaMask" ||
+      c.id === "metaMaskSDK" ||
+      c.name.toLowerCase().includes("metamask")
+  );
+  const valoraConnector = uniqueConnectors.find((c) =>
+    c.name.toLowerCase().includes("valora")
+  );
+  const hasMetaMaskProvider = Boolean(window?.ethereum?.isMetaMask || window?.ethereum?.providers?.some?.((p) => p?.isMetaMask));
 
   return (
     <div className="min-h-dvh flex flex-col bg-background">
@@ -51,33 +116,59 @@ export default function WalletConnect() {
         </div>
 
         <div className="space-y-3">
-          {primaryConnectors.map((connector) => (
+          {!metaMaskConnector && !valoraConnector && (
+            <p className="text-body-sm text-on-surface-variant text-center">
+              Wallet provider not detected yet. You can still tap Connect Wallet.
+            </p>
+          )}
+          {metaMaskConnector && (
             <button
-              key={connector.uid}
-              onClick={() => handleConnect(connector)}
+              key={metaMaskConnector.uid}
+              onClick={() => handleConnect(metaMaskConnector)}
               disabled={isPending}
-              className={`w-full h-14 rounded-lg px-4 flex items-center justify-between font-semibold transition-transform active:scale-[0.98] disabled:opacity-60 ${
-                connector.name.toLowerCase().includes("metamask")
-                  ? "bg-surface-container-lowest border border-outline-variant text-on-surface"
-                  : "bg-primary text-on-primary"
-              }`}
+              className="w-full h-14 rounded-lg px-4 flex items-center justify-between font-semibold transition-transform active:scale-[0.98] disabled:opacity-60 bg-primary text-on-primary"
             >
               <span className="flex items-center gap-2">
-                {connectingId === connector.uid && isPending ? (
+                {connectingId === metaMaskConnector.uid && isPending ? (
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                 ) : null}
-                {connector.name}
+                {isPending && connectingId === metaMaskConnector.uid
+                  ? "Connecting..."
+                  : "Connect Wallet"}
               </span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
                 <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
-          ))}
+          )}
+          {valoraConnector && (
+            <button
+              key={valoraConnector.uid}
+              onClick={() => handleConnect(valoraConnector)}
+              disabled={isPending}
+              className="w-full h-12 rounded-lg px-4 flex items-center justify-between font-semibold transition-transform active:scale-[0.98] disabled:opacity-60 bg-surface-container-lowest border border-outline-variant text-on-surface"
+            >
+              <span className="flex items-center gap-2">
+                {connectingId === valoraConnector.uid && isPending ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : null}
+                Use Valora
+              </span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+                <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          )}
         </div>
 
-        {error && (
+        {(error || localError) && (
           <p className="mt-4 text-body-sm text-error text-center">
-            {error.message?.split("\n")[0] || "Connection failed. Please try again."}
+            {localError || error.message?.split("\n")[0] || "Connection failed. Please try again."}
+          </p>
+        )}
+        {isConnected && chainId && isWrongNetwork && (
+          <p className="mt-2 text-body-sm text-error text-center">
+            Wrong network detected. Please switch to Celo Sepolia.
           </p>
         )}
 
