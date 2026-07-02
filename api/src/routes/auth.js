@@ -66,4 +66,36 @@ router.post('/verify', (req, res) => {
   }
 });
 
+/**
+ * POST /api/auth/wallet-event
+ * Lightweight hook for wallet connect UI events (clicked/success/failed)
+ */
+router.post('/wallet-event', [
+  body('event')
+    .isIn(['connect_clicked', 'connect_success', 'connect_failed'])
+    .withMessage('Invalid wallet event'),
+  body('wallet').optional().isEthereumAddress().withMessage('Invalid wallet address'),
+  body('connector').optional().isString(),
+  body('error').optional().isString(),
+], (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { event, wallet, connector, error } = req.body;
+
+  // This is intentionally simple: a server-side reaction point for connect events.
+  console.log('[wallet-event]', {
+    event,
+    wallet: wallet?.toLowerCase?.() || null,
+    connector: connector || null,
+    error: error || null,
+    at: new Date().toISOString(),
+    ip: req.ip,
+  });
+
+  return res.json({ ok: true });
+});
+
 module.exports = router;

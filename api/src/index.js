@@ -11,6 +11,7 @@ const lotRoutes = require('./routes/lots');
 const farmerRoutes = require('./routes/farmers');
 const marketRoutes = require('./routes/market');
 const markRoutes = require('./routes/marks');
+const newsRoutes = require("./routes/news");
 
 const app = express();
 
@@ -61,6 +62,7 @@ app.use('/api/lots', lotRoutes);
 app.use('/api/farmers', farmerRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/marks', markRoutes);
+app.use("/api/news", newsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

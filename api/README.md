@@ -35,6 +35,7 @@ See `.env.example` for required variables:
 
 - `POST /api/auth/login` - Login with wallet signature
 - `POST /api/auth/verify` - Verify JWT token
+- `POST /api/auth/wallet-event` - Receive wallet connect UI events (`connect_clicked`, `connect_success`, `connect_failed`)
 
 ### Lots
 
@@ -65,6 +66,11 @@ See `.env.example` for required variables:
 - `GET /api/marks/farmer/:wallet` - Get farmer marks
 - `POST /api/marks` - Issue new mark
 - `PUT /api/marks/:id/revoke` - Revoke mark
+
+### News
+
+- `GET /api/news` - Get government bulletins (shared feed)
+- `POST /api/news` - Publish a government bulletin
 
 ## Rate Limiting
 
