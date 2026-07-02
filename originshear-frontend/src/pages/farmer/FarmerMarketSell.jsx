@@ -3,6 +3,7 @@ import { useAccount, useChainId, useReadContracts, useWriteContract, useWaitForT
 import AppLayout from "../../layouts/AppLayout";
 import { useFarmerLots } from "../../hooks/useFarmerLots";
 import { useCusdBalance } from "../../hooks/useCusdBalance";
+import { usePaymentHistory } from "../../hooks/usePaymentHistory";
 import { LotStatus, FibreTypeLabel, GradeLabel } from "../../contracts/HarvestLedger";
 import { FARMER_MARKET_ABI, OfferStatus, OfferStatusLabel } from "../../contracts/FarmerMarket";
 import { getContractAddresses } from "../../contracts/addresses";
@@ -14,6 +15,7 @@ export default function FarmerMarketSell() {
   const addresses = getContractAddresses(chainId);
   const { lots, isLoading, refetch } = useFarmerLots(address);
   const { data: balance } = useCusdBalance(address);
+  const { payments: paymentHistory } = usePaymentHistory(address);
 
   const validatedUnlisted = lots.filter((l) => l.status === LotStatus.VALIDATED);
   const lotIds = validatedUnlisted.map((l) => l.lotId);
@@ -110,14 +112,14 @@ export default function FarmerMarketSell() {
           </>
         )}
 
-        {completedOffers.length > 0 && (
+        {paymentHistory.length > 0 && (
           <>
             <h2 className="text-label-lg text-primary uppercase tracking-widest mb-2">
               Payment History (Nalane ea Litefiso)
             </h2>
             <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm divide-y divide-outline-variant">
-              {completedOffers.map((offer) => (
-                <CompletedOfferRow key={offer.offerId.toString()} offer={offer} />
+              {paymentHistory.map((payment) => (
+                <CompletedOfferRow key={payment.offerId.toString()} payment={payment} />
               ))}
             </div>
           </>
@@ -234,20 +236,18 @@ function ActiveOfferCard({ offer }) {
   );
 }
 
-function CompletedOfferRow({ offer }) {
-  // netAmount isn't stored on the offer struct; approximate the
-  // 2%-fee-deducted display using platformFeeBps would need an extra read.
-  // We display the gross ask price here with a note, which is accurate to
-  // what the farmer agreed to and avoids an extra round trip per row.
+function CompletedOfferRow({ payment }) {
   return (
     <div className="p-4 flex justify-between items-center">
       <div>
-        <p className="font-bold text-body-lg">{formatCUSD(offer.askPriceWei)} cUSD</p>
-        <p className="text-label-sm text-on-surface-variant">Lot #{offer.lotId.toString()}</p>
+        <p className="font-bold text-body-lg">{formatCUSD(payment.netAmount)} cUSD</p>
+        <p className="text-label-sm text-on-surface-variant">Lot #{payment.lotId.toString()} · Net Earnings</p>
       </div>
       <div className="text-right">
-        <p className="font-bold text-primary">+{cusdToLSL(offer.askPriceWei)} LSL</p>
-        <p className="text-[10px] text-on-surface-variant">Gross, before 2% fee</p>
+        <p className="font-bold text-primary">+{cusdToLSL(payment.netAmount)} LSL</p>
+        <p className="text-[10px] text-on-surface-variant">
+          Fee: {formatCUSD(payment.fee)} cUSD (2%)
+        </p>
       </div>
     </div>
   );
