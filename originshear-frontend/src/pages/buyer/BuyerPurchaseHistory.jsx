@@ -37,6 +37,12 @@ export default function BuyerPurchaseHistory() {
           Completed purchases with accurate net amounts from PaymentReleased events
         </p>
 
+        {!address && (
+          <p className="text-label-sm text-on-surface-variant mb-4">
+            Connect wallet to see your personal purchase history.
+          </p>
+        )}
+
         <div className="grid grid-cols-2 gap-3 mb-6">
           <SummaryCard label="Total Purchases" st="Loto tse rekileng" value={purchases.length} />
           <SummaryCard

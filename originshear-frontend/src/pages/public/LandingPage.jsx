@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 export default function LandingPage() {
   const navigate = useNavigate();
 
+  function handleBuyerEntry() {
+    navigate("/buyer/marketplace");
+  }
+
   return (
     <div className="min-h-dvh bg-background">
       <header className="flex justify-between items-center px-4 py-3 border-b border-outline-variant">
@@ -36,7 +40,7 @@ export default function LandingPage() {
             I'm a Farmer
           </button>
           <button
-            onClick={() => navigate("/verify")}
+            onClick={handleBuyerEntry}
             className="w-full h-14 rounded-lg border border-white/40 text-white font-semibold"
           >
             I'm a Buyer / Verifier
@@ -77,7 +81,7 @@ export default function LandingPage() {
           <AudienceRow border="border-l-role-farmer" pretitle="LNWMGA Members" title="Farmers" desc="Protect your hard work with a permanent record across global markets directly." cta="Join Portal" onClick={() => navigate("/role-select")} />
           <AudienceRow border="border-l-role-validator" pretitle="Official Agents" title="Validators" desc="Digitize the grading and clearing process with mobile tools built for the field." cta="Agent Login" onClick={() => navigate("/role-select")} />
           <AudienceRow border="border-l-role-government" pretitle="Government" title="Ministry" desc="Real-time agricultural data dashboards for policy making and trade oversight." cta="Admin Access" onClick={() => navigate("/role-select")} />
-          <AudienceRow border="border-l-role-buyer" pretitle="Global Traders" title="Buyers" desc="Source with absolute confidence. Proof of origin and quality in every single bale." cta="Marketplace" onClick={() => navigate("/verify")} />
+          <AudienceRow border="border-l-role-buyer" pretitle="Global Traders" title="Buyers" desc="Source with absolute confidence. Proof of origin and quality in every single bale." cta="Marketplace" onClick={handleBuyerEntry} />
         </div>
       </section>
 

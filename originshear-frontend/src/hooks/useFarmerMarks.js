@@ -72,7 +72,10 @@ export function useFarmerMarks(farmerAddress) {
   }, [publicClient, addresses, farmerAddress]);
 
   useEffect(() => {
-    fetchMarks();
+    const timer = setTimeout(() => {
+      void fetchMarks();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchMarks]);
 
   return { marks, isLoading, refetch: fetchMarks };

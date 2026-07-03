@@ -4,6 +4,7 @@ import AppLayout from "../../layouts/AppLayout";
 import { HARVEST_LEDGER_ABI, FibreTypeLabel, GradeLabel, LotStatus, LotStatusLabel } from "../../contracts/HarvestLedger";
 import { getContractAddresses } from "../../contracts/addresses";
 import { gramsToKg, shorten, timeAgo } from "../../lib/utils";
+import { toGatewayUrl } from "../../lib/ipfs";
 import StatusChip from "../../components/ui/StatusChip";
 
 export default function LotDetail() {
@@ -58,6 +59,20 @@ export default function LotDetail() {
             <hr className="border-outline-variant my-4" />
             <p className="text-label-sm text-on-surface-variant uppercase mb-1">Proof of Origin Hash</p>
             <code className="text-body-sm break-all">{lot.proofOfOrigin}</code>
+
+            {lot.metadataURI && (
+              <>
+                <p className="text-label-sm text-on-surface-variant uppercase mt-4 mb-1">Metadata URI</p>
+                <a
+                  href={toGatewayUrl(lot.metadataURI)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-body-sm text-primary underline break-all"
+                >
+                  {lot.metadataURI}
+                </a>
+              </>
+            )}
 
             {lot.status === LotStatus.VALIDATED && (
               <Link

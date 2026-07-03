@@ -1,0 +1,34 @@
+{
+  "generatedAt": "2026-07-03T20:18:08.176Z",
+  "baseUrl": "http://localhost:3000",
+  "node": "v20.20.2",
+  "platform": "darwin 22.6.0",
+  "cpuModel": "unavailable-in-runtime",
+  "cpuCores": 4,
+  "totalMemoryGB": 16,
+  "config": {
+    "requestsPerEndpoint": 120,
+    "concurrency": 12,
+    "endpoints": [
+      "/health"
+    ]
+  },
+  "results": [
+    {
+      "endpoint": "/health",
+      "requests": 120,
+      "concurrency": 12,
+      "elapsedMs": 220.95,
+      "throughputRps": 543.12,
+      "latencyMs": {
+        "min": 4.15,
+        "avg": 16.41,
+        "p95": 43.2,
+        "max": 88.3
+      },
+      "statuses": {
+        "200": 120
+      }
+    }
+  ]
+}

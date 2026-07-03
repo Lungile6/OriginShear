@@ -35,10 +35,20 @@ export const CONTRACT_ADDRESSES = {
     farmerMarket:  import.meta.env.VITE_LOCAL_FARMER_MARKET  || "0x0000000000000000000000000000000000000000",
     verifier:      import.meta.env.VITE_LOCAL_VERIFIER        || "0x0000000000000000000000000000000000000000",
     industryMarkRegistry: import.meta.env.VITE_LOCAL_INDUSTRY_MARK_REGISTRY || "0x0000000000000000000000000000000000000000",
-    token:         import.meta.env.VITE_LOCAL_MOCK_TOKEN      || "0x0000000000000000000000000000000000000000",
+    token:
+      import.meta.env.VITE_LOCAL_MOCK_CUSD ||
+      import.meta.env.VITE_LOCAL_MOCK_TOKEN ||
+      "0x0000000000000000000000000000000000000000",
   },
 };
 
 export function getContractAddresses(chainId) {
-  return CONTRACT_ADDRESSES[chainId] ?? null;
+  const addresses = CONTRACT_ADDRESSES[chainId];
+  if (!addresses) return null;
+
+  // Backward compatibility: some hooks/pages still read `cUSD`.
+  return {
+    ...addresses,
+    cUSD: addresses.cUSD || addresses.token,
+  };
 }

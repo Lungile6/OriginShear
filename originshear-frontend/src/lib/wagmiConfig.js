@@ -3,13 +3,16 @@ import { celo, hardhat } from "wagmi/chains";
 import { injected, metaMask } from "wagmi/connectors";
 import { defineChain } from "viem";
 
+const DEFAULT_CELO_SEPOLIA_RPC_URL =
+  import.meta.env.VITE_CELO_SEPOLIA_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org";
+
 export const celoSepolia = defineChain({
   id: 11142220,
   name: "Celo Sepolia",
   nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
   rpcUrls: {
     default: {
-      http: [import.meta.env.VITE_CELO_SEPOLIA_RPC_URL || "https://celo-sepolia.g.alchemy.com/v2/guusXcuDWSTypMk8NFB4_"],
+      http: [DEFAULT_CELO_SEPOLIA_RPC_URL],
     },
   },
   blockExplorers: {
@@ -50,7 +53,7 @@ export const wagmiConfig = createConfig({
     injected({ unstable_shimAsyncInject: 1500 }),
   ],
   transports: {
-    [celoSepolia.id]: http(import.meta.env.VITE_CELO_SEPOLIA_RPC_URL || "https://celo-sepolia.g.alchemy.com/v2/guusXcuDWSTypMk8NFB4_"),
+    [celoSepolia.id]: http(DEFAULT_CELO_SEPOLIA_RPC_URL),
     [celo.id]:        http("https://forno.celo.org"),
     [hardhat.id]:     http("http://127.0.0.1:8545"),
   },

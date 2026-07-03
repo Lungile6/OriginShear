@@ -19,7 +19,7 @@ dataSources:
         - Validation
       abis:
         - name: HarvestLedger
-          file: HarvestLedger/abis/HarvestLedger.json
+          file: HarvestLedger/HarvestLedger.json
       eventHandlers:
         - event: FarmerRegistered(indexed address,string,string)
           handler: handleFarmerRegistered
@@ -45,7 +45,7 @@ dataSources:
         - Payment
       abis:
         - name: FarmerMarket
-          file: FarmerMarket/abis/FarmerMarket.json
+          file: FarmerMarket/FarmerMarket.json
       eventHandlers:
         - event: LotListed(indexed uint256,indexed uint256,address,uint256)
           handler: handleLotListed
@@ -71,7 +71,7 @@ dataSources:
         - Mark
       abis:
         - name: IndustryMarkRegistry
-          file: IndustryMarkRegistry/abis/IndustryMarkRegistry.json
+          file: IndustryMarkRegistry/IndustryMarkRegistry.json
       eventHandlers:
         - event: MarkIssued(indexed uint256,indexed address,string,uint8,uint256)
           handler: handleMarkIssued

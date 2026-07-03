@@ -1,0 +1,52 @@
+{
+  "generatedAt": "2026-07-03T20:17:26.327Z",
+  "baseUrl": "http://localhost:3000",
+  "node": "v20.20.2",
+  "platform": "darwin 22.6.0",
+  "cpuModel": "unknown",
+  "cpuCores": 0,
+  "totalMemoryGB": 16,
+  "config": {
+    "requestsPerEndpoint": 120,
+    "concurrency": 12,
+    "endpoints": [
+      "/health",
+      "/api/news"
+    ]
+  },
+  "results": [
+    {
+      "endpoint": "/health",
+      "requests": 120,
+      "concurrency": 12,
+      "elapsedMs": 283.88,
+      "throughputRps": 422.71,
+      "latencyMs": {
+        "min": 3.88,
+        "avg": 21.06,
+        "p95": 59.32,
+        "max": 124.76
+      },
+      "statuses": {
+        "200": 120
+      }
+    },
+    {
+      "endpoint": "/api/news",
+      "requests": 120,
+      "concurrency": 12,
+      "elapsedMs": 174.16,
+      "throughputRps": 689.03,
+      "latencyMs": {
+        "min": 3.92,
+        "avg": 16.95,
+        "p95": 28.57,
+        "max": 30.34
+      },
+      "statuses": {
+        "200": 50,
+        "429": 70
+      }
+    }
+  ]
+}

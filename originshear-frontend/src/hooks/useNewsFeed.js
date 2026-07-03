@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+import { apiClient } from "../lib/apiClient";
 
 export function useNewsFeed() {
   const [news, setNews] = useState([]);
@@ -11,9 +10,7 @@ export function useNewsFeed() {
     setIsLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API_BASE_URL}/api/news`);
-      if (!res.ok) throw new Error("Failed to load news");
-      const data = await res.json();
+      const data = await apiClient.get("/api/news");
       setNews(data.items || []);
     } catch (err) {
       setError(err?.message || "Failed to load news");
@@ -23,22 +20,16 @@ export function useNewsFeed() {
   }, []);
 
   const publishNews = useCallback(async (payload) => {
-    const res = await fetch(`${API_BASE_URL}/api/news`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data?.error || "Failed to publish bulletin");
-    }
-    const data = await res.json();
+    const data = await apiClient.post("/api/news", payload);
     setNews((prev) => [data.item, ...prev]);
     return data.item;
   }, []);
 
   useEffect(() => {
-    fetchNews();
+    const timer = setTimeout(() => {
+      void fetchNews();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchNews]);
 
   return { news, isLoading, error, fetchNews, publishNews };

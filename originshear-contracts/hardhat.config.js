@@ -1,6 +1,9 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 
+const CELO_SEPOLIA_RPC_URL =
+  process.env.CELO_SEPOLIA_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org";
+
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
@@ -14,7 +17,7 @@ module.exports = {
       chainId: 31337,
     },
     celoSepolia: {
-      url: process.env.CELO_SEPOLIA_RPC_URL || "https://celo-mainnet.g.alchemy.com/v2/guusXcuDWSTypMk8NFB4_",
+      url: CELO_SEPOLIA_RPC_URL,
       chainId: 11142220,
       accounts: process.env.PRIVATE_KEY
         ? [process.env.PRIVATE_KEY.startsWith("0x") ? process.env.PRIVATE_KEY : `0x${process.env.PRIVATE_KEY}`]

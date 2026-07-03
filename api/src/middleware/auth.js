@@ -1,6 +1,11 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
+
+if (!JWT_SECRET) {
+  throw new Error('Missing required env var JWT_SECRET');
+}
 
 /**
  * JWT authentication middleware
@@ -46,7 +51,9 @@ const authorize = (...roles) => {
  * Generate JWT token
  */
 const generateToken = (payload) => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 };
 
-module.exports = { authenticate, authorize, generateToken };
+const verifyToken = (token) => jwt.verify(token, JWT_SECRET);
+
+module.exports = { authenticate, authorize, generateToken, verifyToken };

@@ -5,6 +5,7 @@ import AppLayout from "../../layouts/AppLayout";
 import { useFarmerLots } from "../../hooks/useFarmerLots";
 import { LotStatus, LotStatusLabel, FibreType, FibreTypeLabel, GradeLabel } from "../../contracts/HarvestLedger";
 import { gramsToKg, shorten } from "../../lib/utils";
+import { toGatewayUrl } from "../../lib/ipfs";
 import StatusChip from "../../components/ui/StatusChip";
 
 const TYPE_FILTERS = [
@@ -116,6 +117,17 @@ function LotCard({ lot }) {
       <p className="text-[10px] text-on-surface-variant font-mono mb-3">
         HASH: {shorten(lot.proofOfOrigin, 6, 6)}
       </p>
+
+      {lot.metadataURI && (
+        <a
+          href={toGatewayUrl(lot.metadataURI)}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 text-label-sm text-primary font-semibold mb-3 underline"
+        >
+          View Metadata (IPFS)
+        </a>
+      )}
 
       {status === LotStatus.VALIDATED && (
         <Link

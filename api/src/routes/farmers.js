@@ -1,7 +1,23 @@
 const express = require('express');
 const { authenticate } = require('../middleware/auth');
+const { ethers } = require('ethers');
+const { querySubgraph } = require('../lib/subgraph');
 
 const router = express.Router();
+
+function parsePagination(query) {
+  const page = Math.max(parseInt(query.page || 1, 10), 1);
+  const limit = Math.min(Math.max(parseInt(query.limit || 20, 10), 1), 100);
+  return { page, limit, skip: (page - 1) * limit };
+}
+
+function normalizeWalletOrFail(wallet, res) {
+  if (!ethers.isAddress(wallet)) {
+    res.status(400).json({ error: 'Invalid wallet address' });
+    return null;
+  }
+  return wallet.toLowerCase();
+}
 
 /**
  * GET /api/farmers/:wallet
@@ -9,7 +25,8 @@ const router = express.Router();
  */
 router.get('/:wallet', authenticate, async (req, res) => {
   try {
-    const { wallet } = req.params;
+    const wallet = normalizeWalletOrFail(req.params.wallet, res);
+    if (!wallet) return;
     const cacheKey = `farmer:${wallet}`;
     
     const cached = req.cache.get(cacheKey);
@@ -17,8 +34,22 @@ router.get('/:wallet', authenticate, async (req, res) => {
       return res.json(cached);
     }
 
-    // In production, fetch from blockchain or subgraph
-    const farmer = null;
+    const query = `
+      query FarmerByWallet($wallet: String!) {
+        farmers(where: { id: $wallet }, first: 1) {
+          id
+          wallet
+          farmerId
+          district
+          active
+          totalLotsRegistered
+          totalWeightGrams
+          createdAt
+        }
+      }
+    `;
+    const data = await querySubgraph(query, { wallet });
+    const farmer = data.farmers[0] || null;
 
     if (!farmer) {
       return res.status(404).json({ error: 'Farmer not found' });
@@ -38,8 +69,9 @@ router.get('/:wallet', authenticate, async (req, res) => {
  */
 router.get('/:wallet/lots', authenticate, async (req, res) => {
   try {
-    const { wallet } = req.params;
-    const { page = 1, limit = 20 } = req.query;
+    const wallet = normalizeWalletOrFail(req.params.wallet, res);
+    if (!wallet) return;
+    const { page, limit, skip } = parsePagination(req.query);
     const cacheKey = `farmer:${wallet}:lots:${page}:${limit}`;
     
     const cached = req.cache.get(cacheKey);
@@ -47,14 +79,61 @@ router.get('/:wallet/lots', authenticate, async (req, res) => {
       return res.json(cached);
     }
 
-    // In production, fetch from subgraph
+    const lotsQuery = `
+      query FarmerLots($wallet: String!, $first: Int!, $skip: Int!) {
+        lots(
+          where: { farmer: $wallet }
+          first: $first
+          skip: $skip
+          orderBy: registeredAt
+          orderDirection: desc
+        ) {
+          id
+          lotId
+          fibreType
+          grade
+          weightGrams
+          gpsZone
+          seasonYear
+          proofOfOrigin
+          status
+          registeredAt
+          validatedAt
+          validatedBy
+          metadataURI
+          offer {
+            id
+            offerId
+            askPriceWei
+            status
+            buyer
+            escrowAmount
+            listedAt
+            completedAt
+          }
+        }
+      }
+    `;
+
+    const countQuery = `
+      query FarmerLotsCount($wallet: String!) {
+        lots(where: { farmer: $wallet }) { id }
+      }
+    `;
+
+    const [lotsData, countData] = await Promise.all([
+      querySubgraph(lotsQuery, { wallet, first: limit, skip }),
+      querySubgraph(countQuery, { wallet }),
+    ]);
+    const total = countData.lots.length;
+
     const lots = {
-      data: [],
+      data: lotsData.lots,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total: 0,
-        totalPages: 0
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
       }
     };
 
@@ -72,7 +151,8 @@ router.get('/:wallet/lots', authenticate, async (req, res) => {
  */
 router.get('/:wallet/stats', authenticate, async (req, res) => {
   try {
-    const { wallet } = req.params;
+    const wallet = normalizeWalletOrFail(req.params.wallet, res);
+    if (!wallet) return;
     const cacheKey = `farmer:${wallet}:stats`;
     
     const cached = req.cache.get(cacheKey);
@@ -80,13 +160,33 @@ router.get('/:wallet/stats', authenticate, async (req, res) => {
       return res.json(cached);
     }
 
-    // In production, calculate from subgraph data
+    const statsQuery = `
+      query FarmerStats($wallet: String!) {
+        farmers(where: { id: $wallet }, first: 1) {
+          totalLotsRegistered
+          totalWeightGrams
+        }
+        lots(where: { farmer: $wallet, status: 1 }) { id }
+        offers(where: { farmer: $wallet, status: 2 }) { id }
+        payments(where: { farmer: $wallet }) {
+          netAmount
+        }
+      }
+    `;
+
+    const data = await querySubgraph(statsQuery, { wallet });
+    const farmer = data.farmers[0] || null;
+    const totalRevenue = (data.payments || []).reduce(
+      (acc, payment) => acc + BigInt(payment.netAmount || "0"),
+      0n
+    );
+
     const stats = {
-      totalLots: 0,
-      totalWeightGrams: 0,
-      validatedLots: 0,
-      soldLots: 0,
-      totalRevenue: 0
+      totalLots: farmer ? Number(farmer.totalLotsRegistered) : 0,
+      totalWeightGrams: farmer ? Number(farmer.totalWeightGrams) : 0,
+      validatedLots: data.lots.length,
+      soldLots: data.offers.length,
+      totalRevenue: totalRevenue.toString(),
     };
 
     req.cache.set(cacheKey, stats);

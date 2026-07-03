@@ -1,4 +1,4 @@
-import { Routes, Route, Outlet, useLocation } from "react-router-dom";
+import { Routes, Route, Outlet, useLocation, Navigate, useParams } from "react-router-dom";
 import RequireRole from "./components/RequireRole";
 import { Role } from "./context/RoleContext";
 import { RegisterLotProvider } from "./pages/farmer/RegisterLotContext";
@@ -6,7 +6,6 @@ import BottomNav from "./components/nav/BottomNav";
 
 // Public
 import LandingPage from "./pages/public/LandingPage";
-import PublicLotVerification from "./pages/public/PublicLotVerification";
 import NotFound from "./pages/public/NotFound";
 
 // Auth
@@ -57,13 +56,24 @@ function RegisterLotFlow() {
 function GlobalBottomNavigation() {
   const { pathname } = useLocation();
 
-  let role = "PUBLIC";
-  if (pathname.startsWith("/farmer")) role = "FARMER";
+  // Keep bottom navigation visible only on route groups where it is expected.
+  // This prevents "public" tabs from appearing on auth/onboarding/error flows.
+  let role = null;
+  if (pathname === "/" || pathname === "/news") role = "PUBLIC";
+  else if (pathname.startsWith("/farmer")) role = "FARMER";
   else if (pathname.startsWith("/validator")) role = "VALIDATOR";
   else if (pathname.startsWith("/government")) role = "GOVERNMENT";
   else if (pathname.startsWith("/buyer")) role = "BUYER";
 
+  if (!role) return null;
+
   return <BottomNav role={role} />;
+}
+
+function LegacyVerifyLotRedirect() {
+  const { lotId } = useParams();
+  const { search } = useLocation();
+  return <Navigate to={`/buyer/verify/lot/${lotId}${search}`} replace />;
 }
 
 export default function App() {
@@ -72,8 +82,15 @@ export default function App() {
       <Routes>
         {/* Public */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/verify" element={<PublicLotVerification />} />
-        <Route path="/verify/lot/:lotId" element={<PublicLotVerification />} />
+        <Route path="/news" element={<GovernmentNewsHub />} />
+        <Route
+          path="/verify"
+          element={<Navigate to="/buyer/verify" replace />}
+        />
+        <Route
+          path="/verify/lot/:lotId"
+          element={<LegacyVerifyLotRedirect />}
+        />
 
         {/* Auth */}
         <Route path="/splash" element={<Splash />} />
@@ -147,11 +164,7 @@ export default function App() {
       />
       <Route
         path="/farmer/news"
-        element={
-          <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
-            <GovernmentNewsHub />
-          </RequireRole>
-        }
+        element={<Navigate to="/news" replace />}
       />
 
       {/* Validator (role-gated) */}
@@ -191,69 +204,37 @@ export default function App() {
       />
       <Route
         path="/government/news"
-        element={
-          <RequireRole role={Role.GOVERNMENT} redirectTo="/onboarding/government">
-            <GovernmentNewsHub />
-          </RequireRole>
-        }
+        element={<Navigate to="/news" replace />}
       />
 
-      {/* Buyer (role-gated) */}
+      {/* Buyer (public browsing; connect only when purchasing) */}
       <Route
         path="/buyer"
-        element={
-          <RequireRole role={Role.BUYER} redirectTo="/connect">
-            <BuyerDashboard />
-          </RequireRole>
-        }
+        element={<BuyerDashboard />}
       />
       <Route
         path="/buyer/marketplace"
-        element={
-          <RequireRole role={Role.BUYER} redirectTo="/connect">
-            <BuyerMarketplace />
-          </RequireRole>
-        }
+        element={<BuyerMarketplace />}
       />
       <Route
         path="/buyer/lots/:lotId"
-        element={
-          <RequireRole role={Role.BUYER} redirectTo="/connect">
-            <LotPurchaseDetail />
-          </RequireRole>
-        }
+        element={<LotPurchaseDetail />}
       />
       <Route
         path="/buyer/purchases"
-        element={
-          <RequireRole role={Role.BUYER} redirectTo="/connect">
-            <BuyerPurchaseHistory />
-          </RequireRole>
-        }
+        element={<BuyerPurchaseHistory />}
       />
       <Route
         path="/buyer/news"
-        element={
-          <RequireRole role={Role.BUYER} redirectTo="/connect">
-            <GovernmentNewsHub />
-          </RequireRole>
-        }
+        element={<Navigate to="/news" replace />}
       />
       <Route
         path="/buyer/verify"
-        element={
-          <RequireRole role={Role.BUYER} redirectTo="/connect">
-            <BuyerLotVerification />
-          </RequireRole>
-        }
+        element={<BuyerLotVerification />}
       />
       <Route
         path="/buyer/verify/lot/:lotId"
-        element={
-          <RequireRole role={Role.BUYER} redirectTo="/connect">
-            <BuyerLotVerification />
-          </RequireRole>
-        }
+        element={<BuyerLotVerification />}
       />
 
         <Route path="*" element={<NotFound />} />

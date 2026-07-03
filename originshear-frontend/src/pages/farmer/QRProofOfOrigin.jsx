@@ -38,7 +38,7 @@ export default function QRProofOfOrigin() {
 
   // Public verification URL — encoded into the QR so any phone camera
   // (not just this app) can resolve it to the public_lot_verification page.
-  const verifyUrl = `${window.location.origin}/verify/lot/${lotId}?proof=${lot.proofOfOrigin}`;
+  const verifyUrl = `${window.location.origin}/buyer/verify/lot/${lotId}?proof=${lot.proofOfOrigin}`;
 
   return (
     <AppLayout role="FARMER" title="ORIGINSHEAR">

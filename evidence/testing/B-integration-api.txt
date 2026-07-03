@@ -1,0 +1,23 @@
+STRATEGY B — Integration Tests (API Layer)
+Command: npm --prefix api run test:ci
+Tool: Jest + Supertest
+Date: 2026-07-03
+
+PASS  __tests__/routes.integration.test.js
+PASS  __tests__/dataValues.integration.test.js
+PASS  __tests__/envGuards.integration.test.js
+PASS  __tests__/roleAuth.integration.test.js
+PASS  __tests__/roleAuthPositive.integration.test.js
+
+Test Suites: 5 passed, 5 total
+Tests:       22 passed, 22 total
+Snapshots:   0 total
+Time:        4.331 s
+
+Coverage areas:
+- JWT auth challenge / login / verify flow
+- Role-based access control (VALIDATOR_ROLE, GOVERNMENT_ROLE)
+- Lot registration validation and relayer guard
+- Market offer and purchase proxy guards
+- Env variable guardrails (missing RELAYER_PRIVATE_KEY, missing contract addresses)
+- Data-value coverage (normal, boundary, invalid inputs)

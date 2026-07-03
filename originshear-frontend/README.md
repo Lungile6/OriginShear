@@ -85,6 +85,7 @@ npm run lint     # ESLint
 
 ## Notes on scope and known gaps
 
+- **IPFS metadata**: The Register Lot review step now uploads lot metadata through `POST /api/ipfs/lot-metadata`, then passes the returned `metadataURI` into `HarvestLedger.registerLot`. Configure `VITE_API_BASE_URL` and optional `VITE_IPFS_GATEWAY` in `.env`.
 - **`totalLots()` getter**: `HarvestLedger.sol` was given a small additive
   change — a public `totalLots()` view function — so the Validator Queue
   and Audit Log can enumerate all lots without an indexer. This is

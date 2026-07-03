@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
-import { useChainId, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { isAddress } from "viem";
 import AppLayout from "../../layouts/AppLayout";
 import { useLotQueue } from "../../hooks/useLotQueue";
 import { useIndustryMarks } from "../../hooks/useIndustryMarks";
 import { useFarmerMarks } from "../../hooks/useFarmerMarks";
 import { LotStatus } from "../../contracts/HarvestLedger";
-import { INDUSTRY_MARK_REGISTRY_ABI, MarkTypeLabel } from "../../contracts/IndustryMarkRegistry";
-import { getContractAddresses } from "../../contracts/addresses";
+import { MarkTypeLabel } from "../../contracts/IndustryMarkRegistry";
+import { apiClient } from "../../lib/apiClient";
 import { shorten } from "../../lib/utils";
 import BilingualText from "../../components/ui/BilingualText";
 
@@ -19,9 +18,6 @@ import BilingualText from "../../components/ui/BilingualText";
 export default function GovernmentDashboard() {
   const { allLots, isLoading: isLoadingQueue } = useLotQueue();
   const { marks: onChainMarks, isLoading: isLoadingMarks, refetch: refetchMarks } = useIndustryMarks();
-  const chainId = useChainId();
-  const addresses = getContractAddresses(chainId);
-
   const [form, setForm] = useState({
     farmerWallet: "",
     farmerId: "",
@@ -37,20 +33,24 @@ export default function GovernmentDashboard() {
     refetch: refetchFarmerMarks,
   } = useFarmerMarks(farmerWalletValid ? form.farmerWallet : null);
 
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
     if (isSuccess) {
       refetchMarks();
       if (farmerWalletValid) refetchFarmerMarks();
-      setForm({
-        farmerWallet: "",
-        farmerId: "",
-        markTypeIndex: 0,
-        description: "",
-        expiryDate: "",
-      });
+      setTimeout(() => {
+        setForm({
+          farmerWallet: "",
+          farmerId: "",
+          markTypeIndex: 0,
+          description: "",
+          expiryDate: "",
+        });
+        setIsSuccess(false);
+      }, 0);
     }
   }, [isSuccess, refetchMarks, refetchFarmerMarks, farmerWalletValid]);
 
@@ -59,28 +59,35 @@ export default function GovernmentDashboard() {
   const pendingCount = allLots.filter((l) => l.status === LotStatus.PENDING).length;
   const total = allLots.length || 1;
 
-  function handleIssue(e) {
+  async function handleIssue(e) {
     e.preventDefault();
-    if (!addresses?.industryMarkRegistry || !form.farmerWallet || !form.farmerId || !form.expiryDate) return;
+    if (!form.farmerWallet || !form.farmerId || !form.expiryDate) return;
 
     const expiresTimestamp = Math.floor(new Date(form.expiryDate).getTime() / 1000);
-
-    writeContract({
-      address: addresses.industryMarkRegistry,
-      abi: INDUSTRY_MARK_REGISTRY_ABI,
-      functionName: "issueMark",
-      args: [
-        form.farmerWallet,
-        form.farmerId,
-        Number(form.markTypeIndex),
-        form.description || "Official government mark",
-        BigInt(expiresTimestamp),
-        "", // metadataURI
-      ],
-    });
+    setSubmitError("");
+    setIsSubmitting(true);
+    try {
+      await apiClient.post(
+        "/api/marks",
+        {
+          farmer: form.farmerWallet,
+          farmerId: form.farmerId,
+          markType: String(Number(form.markTypeIndex)),
+          description: form.description || "Official government mark",
+          expiresAt: expiresTimestamp,
+          metadataURI: "",
+        },
+        { auth: true }
+      );
+      setIsSuccess(true);
+    } catch (err) {
+      setSubmitError(err?.message || "Failed to issue mark");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  const busy = isPending || isConfirming;
+  const busy = isSubmitting;
 
   return (
     <AppLayout role="GOVERNMENT" title="ORIGINSHEAR">
@@ -209,9 +216,9 @@ export default function GovernmentDashboard() {
             className="w-full h-12 rounded-lg border border-outline-variant bg-surface-container px-4 mb-5 text-body-sm focus:border-primary focus:border-2 outline-none"
           />
 
-          {error && (
+          {submitError && (
             <p className="text-body-sm text-error mb-4">
-              {error.shortMessage || error.message}
+              {submitError}
             </p>
           )}
 
@@ -228,7 +235,7 @@ export default function GovernmentDashboard() {
                 <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             )}
-            {isPending ? "Confirm in Wallet..." : isConfirming ? "Writing On-Chain..." : "Issue Mark (Etsa Letšoao)"}
+            {isSubmitting ? "Submitting..." : "Issue Mark (Etsa Letšoao)"}
           </button>
         </form>
 

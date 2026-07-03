@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { useChainId, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import AppLayout from "../../layouts/AppLayout";
 import { useLotQueue } from "../../hooks/useLotQueue";
-import { HARVEST_LEDGER_ABI, FibreTypeLabel, GradeLabel } from "../../contracts/HarvestLedger";
-import { getContractAddresses } from "../../contracts/addresses";
+import { FibreTypeLabel, GradeLabel } from "../../contracts/HarvestLedger";
+import { apiClient } from "../../lib/apiClient";
 import { gramsToKg, shorten } from "../../lib/utils";
 
 export default function ValidatorQueue() {
@@ -33,28 +32,30 @@ export default function ValidatorQueue() {
 }
 
 function QueueCard({ lot, urgent, onDone }) {
-  const chainId = useChainId();
-  const addresses = getContractAddresses(chainId);
   const [action, setAction] = useState(null); // "approve" | "reject" | null
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (isSuccess && action) {
-    setAction(null);
-    onDone?.();
-  }
-
-  function handle(approve) {
+  async function handle(approve) {
     setAction(approve ? "approve" : "reject");
-    writeContract({
-      address: addresses.harvestLedger,
-      abi: HARVEST_LEDGER_ABI,
-      functionName: "validateLot",
-      args: [lot.lotId, approve],
-    });
+    setErrorMessage("");
+    setIsSubmitting(true);
+    try {
+      await apiClient.put(
+        `/api/lots/${lot.lotId.toString()}/validate`,
+        { approve },
+        { auth: true }
+      );
+      onDone?.();
+    } catch (err) {
+      setErrorMessage(err?.message || "Validation request failed");
+    } finally {
+      setIsSubmitting(false);
+      setAction(null);
+    }
   }
 
-  const busy = isPending || isConfirming;
+  const busy = isSubmitting;
 
   return (
     <div className="bg-surface-container rounded-xl border border-outline-variant shadow-sm overflow-hidden">
@@ -82,7 +83,7 @@ function QueueCard({ lot, urgent, onDone }) {
           <Field label="Material (Thepa)" value={FibreTypeLabel[lot.fibreType]} />
         </div>
 
-        {error && <p className="text-label-sm text-error mb-2">{error.shortMessage}</p>}
+        {errorMessage && <p className="text-label-sm text-error mb-2">{errorMessage}</p>}
 
         <div className="flex gap-3">
           <button

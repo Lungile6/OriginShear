@@ -1,0 +1,35 @@
+STRATEGY A — Unit Tests (Smart Contracts)
+Command: npm run test
+Tool: Hardhat + Chai/Mocha
+Date: 2026-07-03
+
+  Lesotho AgriChain — Full Test Suite
+    HarvestLedger — Farmer registration
+      ✔ Admin can register a farmer
+      ✔ Non-admin cannot register a farmer
+      ✔ Cannot register the same wallet twice
+    HarvestLedger — Lot registration
+      ✔ Registered farmer can submit a wool lot
+      ✔ Unregistered address cannot submit a lot
+      ✔ Rejects weight of 0 or over 4 tonnes
+      ✔ Proof of Origin is unique per lot — zero collisions
+      ✔ Updates farmer stats after lot submission
+    HarvestLedger — Lot validation
+      ✔ Validator can approve a lot
+      ✔ Validator can reject a lot
+      ✔ Cannot validate twice
+      ✔ Non-validator cannot validate
+    ProofOfOriginVerifier
+      ✔ verify() returns valid=true for matching hash
+      ✔ verify() returns valid=false for wrong hash
+      ✔ isValidated=false before LNWMGA approval
+      ✔ isValidated=true after approval
+      ✔ logVerification emits on-chain audit event
+      ✔ computeExpectedProof matches on-chain PoO
+    FarmerMarket
+      ✔ Farmer can list a validated lot
+      ✔ Cannot list an unvalidated lot
+      ✔ Buyer can purchase into escrow
+      ✔ Validator releases payment with correct fee split (2%)
+
+  22 passing (3s)

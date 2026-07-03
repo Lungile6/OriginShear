@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChainId, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { useRegisterLot } from "./RegisterLotContext";
@@ -7,6 +7,7 @@ import AppLayout from "../../layouts/AppLayout";
 import { HARVEST_LEDGER_ABI, FibreTypeLabel, GradeLabel } from "../../contracts/HarvestLedger";
 import { getContractAddresses } from "../../contracts/addresses";
 import { kgToGrams } from "../../lib/utils";
+import { apiClient } from "../../lib/apiClient";
 
 export default function RegisterLotReview() {
   const navigate = useNavigate();
@@ -16,6 +17,8 @@ export default function RegisterLotReview() {
 
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const [isUploadingMetadata, setIsUploadingMetadata] = useState(false);
+  const [ipfsError, setIpfsError] = useState("");
 
   useEffect(() => {
     if (isSuccess && hash) {
@@ -23,24 +26,47 @@ export default function RegisterLotReview() {
     }
   }, [isSuccess, hash, navigate]);
 
-  function handleSign() {
+  async function handleSign() {
     if (!addresses) return;
-    writeContract({
-      address: addresses.harvestLedger,
-      abi: HARVEST_LEDGER_ABI,
-      functionName: "registerLot",
-      args: [
-        form.fibreType,
-        form.grade,
-        kgToGrams(form.weightKg),
-        form.gpsZone,
-        form.seasonYear,
-        "", // metadataURI — left blank; wire to IPFS upload later if needed
-      ],
-    });
+    setIpfsError("");
+
+    try {
+      setIsUploadingMetadata(true);
+      const ipfsPayload = {
+        fibreType: String(form.fibreType),
+        grade: String(form.grade),
+        weightGrams: kgToGrams(form.weightKg).toString(),
+        gpsZone: form.gpsZone,
+        seasonYear: form.seasonYear,
+      };
+      const response = await apiClient.post("/api/ipfs/lot-metadata", ipfsPayload, { auth: true });
+      const metadataURI = response?.metadataURI || "";
+      if (!metadataURI) {
+        throw new Error("IPFS upload did not return metadataURI");
+      }
+
+      writeContract({
+        address: addresses.harvestLedger,
+        abi: HARVEST_LEDGER_ABI,
+        functionName: "registerLot",
+        args: [
+          form.fibreType,
+          form.grade,
+          kgToGrams(form.weightKg),
+          form.gpsZone,
+          form.seasonYear,
+          metadataURI,
+        ],
+      });
+    } catch (uploadError) {
+      setIpfsError(uploadError?.message || "Failed to upload metadata to IPFS.");
+      return;
+    } finally {
+      setIsUploadingMetadata(false);
+    }
   }
 
-  const busy = isPending || isConfirming;
+  const busy = isPending || isConfirming || isUploadingMetadata;
 
   return (
     <AppLayout role="FARMER" title="ORIGINSHEAR">
@@ -70,9 +96,9 @@ export default function RegisterLotReview() {
           </p>
         </div>
 
-        {error && (
+        {(error || ipfsError) && (
           <p className="text-body-sm text-error mt-3">
-            {error.shortMessage || error.message?.split("\n")[0]}
+            {ipfsError || error.shortMessage || error.message?.split("\n")[0]}
           </p>
         )}
 
@@ -89,7 +115,13 @@ export default function RegisterLotReview() {
               <path d="M14 3v6h6" />
             </svg>
           )}
-          {isPending ? "Confirm in wallet…" : isConfirming ? "Registering on-chain…" : "Sign & Register / Ngolisa"}
+          {isUploadingMetadata
+            ? "Uploading metadata to IPFS..."
+            : isPending
+              ? "Confirm in wallet…"
+              : isConfirming
+                ? "Registering on-chain..."
+                : "Sign & Register / Ngolisa"}
         </button>
         <button
           onClick={() => navigate(-1)}

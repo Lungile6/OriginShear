@@ -69,7 +69,10 @@ export function useIndustryMarks() {
   }, [publicClient, addresses]);
 
   useEffect(() => {
-    fetchMarks();
+    const timer = setTimeout(() => {
+      void fetchMarks();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchMarks]);
 
   return { marks, isLoading, refetch: fetchMarks };

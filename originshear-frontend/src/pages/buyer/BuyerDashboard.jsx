@@ -75,7 +75,7 @@ export default function BuyerDashboard() {
         <div className="grid grid-cols-2 gap-3">
           <QuickAction to="/buyer/marketplace" icon="market" title="Marketplace" st="Mmaraka" />
           <QuickAction to="/buyer/purchases" icon="history" title="Purchases" st="Litefiso" />
-          <QuickAction to="/buyer/news" icon="news" title="Government News" st="Litaba tsa Mmuso" />
+          <QuickAction to="/news" icon="news" title="Government News" st="Litaba tsa Mmuso" />
           <QuickAction to="/buyer/verify" icon="qr" title="Verify Lot" st="Netefatsa" />
         </div>
       </section>

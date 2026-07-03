@@ -1,15 +1,25 @@
 require('dotenv').config();
-const { create } = require('ipfs-http-client');
 
-// Connect to IPFS (uses public gateway by default, or local node if configured)
-const ipfs = create({
-  url: process.env.IPFS_API_URL || 'https://ipfs.infura.io:5001/api/v0',
-  headers: {
-    authorization: `Basic ${Buffer.from(
-      `${process.env.INFURA_PROJECT_ID}:${process.env.INFURA_PROJECT_SECRET}`
-    ).toString('base64')}`
+let ipfsClientPromise;
+
+async function getIpfsClient() {
+  if (!ipfsClientPromise) {
+    ipfsClientPromise = (async () => {
+      const { create } = await import('ipfs-http-client');
+      const projectId = process.env.INFURA_PROJECT_ID;
+      const projectSecret = process.env.INFURA_PROJECT_SECRET;
+      const headers = {};
+      if (projectId && projectSecret) {
+        headers.authorization = `Basic ${Buffer.from(`${projectId}:${projectSecret}`).toString('base64')}`;
+      }
+      return create({
+        url: process.env.IPFS_API_URL || 'https://ipfs.infura.io:5001/api/v0',
+        ...(Object.keys(headers).length ? { headers } : {})
+      });
+    })();
   }
-});
+  return ipfsClientPromise;
+}
 
 /**
  * Upload metadata to IPFS
@@ -18,6 +28,7 @@ const ipfs = create({
  */
 async function uploadMetadata(metadata) {
   try {
+    const ipfs = await getIpfsClient();
     const result = await ipfs.add(JSON.stringify(metadata));
     return result.path;
   } catch (error) {
@@ -33,6 +44,7 @@ async function uploadMetadata(metadata) {
  */
 async function uploadFile(file) {
   try {
+    const ipfs = await getIpfsClient();
     const result = await ipfs.add(file);
     return result.path;
   } catch (error) {
@@ -48,6 +60,7 @@ async function uploadFile(file) {
  */
 async function getMetadata(cid) {
   try {
+    const ipfs = await getIpfsClient();
     const chunks = [];
     for await (const chunk of ipfs.cat(cid)) {
       chunks.push(chunk);

@@ -7,7 +7,8 @@ export default function GovernmentNewsHub() {
   const location = useLocation();
   const isGovernment = location.pathname.startsWith("/government");
   const isBuyer = location.pathname.startsWith("/buyer");
-  const role = isGovernment ? "GOVERNMENT" : isBuyer ? "BUYER" : "FARMER";
+  const isPublicNews = location.pathname === "/news";
+  const role = isPublicNews ? "PUBLIC" : isGovernment ? "GOVERNMENT" : isBuyer ? "BUYER" : "FARMER";
 
   const { news, isLoading, error, publishNews } = useNewsFeed();
   const [lang, setLang] = useState("EN");
@@ -86,31 +87,32 @@ export default function GovernmentNewsHub() {
   );
 }
 
+const BULLETIN_TYPES = [
+  { value: 0, label: "Price Alert (Tsebiso ea Theko)" },
+  { value: 1, label: "Market Notice (Tsebiso ea Maraka)" },
+  { value: 2, label: "Regulation (Melao)" },
+  { value: 3, label: "General (Kakaretso)" },
+];
+
 function ComposeFab({ onPublish }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [tag, setTag] = useState("Market Notice (Tsebiso ea Maraka)");
+  const [bulletinType, setBulletinType] = useState(1);
   const [body, setBody] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState("");
 
   async function handlePublish() {
-    if (!title) return;
+    if (!title.trim() || !body.trim()) return;
     setPublishing(true);
     setError("");
     try {
-      await onPublish({
-        tag,
-        tagColor: "bg-secondary-container text-on-secondary-container",
-        title,
-        body,
-        cta: "Read Details (Bala Lintlafatso)",
-      });
+      await onPublish({ bulletinType, title: title.trim(), body: body.trim() });
       setTitle("");
       setBody("");
       setOpen(false);
     } catch (err) {
-      setError(err?.message || "Failed to publish announcement");
+      setError(err?.message || "Failed to publish bulletin");
     } finally {
       setPublishing(false);
     }
@@ -135,13 +137,13 @@ function ComposeFab({ onPublish }) {
 
             <label className="block text-body-sm font-semibold mb-2">Category</label>
             <select
-              value={tag}
-              onChange={(e) => setTag(e.target.value)}
+              value={bulletinType}
+              onChange={(e) => setBulletinType(Number(e.target.value))}
               className="w-full h-12 rounded-lg border border-outline-variant bg-surface-container px-4 mb-4 text-body-sm appearance-none"
             >
-              <option>Price Alert (Tsebiso ea Theko)</option>
-              <option>Market Notice (Tsebiso ea Maraka)</option>
-              <option>Regulation (Melao)</option>
+              {BULLETIN_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
             </select>
 
             <label className="block text-body-sm font-semibold mb-2">Title</label>
@@ -152,21 +154,21 @@ function ComposeFab({ onPublish }) {
               placeholder="Headline for the bulletin"
             />
 
-            <label className="block text-body-sm font-semibold mb-2">Body (optional)</label>
+            <label className="block text-body-sm font-semibold mb-2">Body</label>
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={3}
               className="w-full rounded-lg border border-outline-variant bg-surface-container px-4 py-3 mb-5 text-body-sm"
-              placeholder="Additional detail shown under the headline"
+              placeholder="Detail shown under the headline"
             />
 
             <button
               onClick={handlePublish}
-              disabled={publishing}
+              disabled={publishing || !title.trim() || !body.trim()}
               className="w-full h-14 rounded-lg bg-primary text-on-primary font-semibold mb-2 disabled:opacity-60"
             >
-              {publishing ? "Publishing..." : "Publish Bulletin"}
+              {publishing ? "Publishing on-chain..." : "Publish Bulletin"}
             </button>
             {error && <p className="text-body-sm text-error mb-2">{error}</p>}
             <button

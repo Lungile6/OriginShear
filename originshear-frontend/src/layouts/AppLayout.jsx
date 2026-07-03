@@ -7,7 +7,7 @@ import TopAppBar from "../components/nav/TopAppBar";
  */
 export default function AppLayout({ role, title, children }) {
   return (
-    <div className="min-h-dvh flex flex-col bg-background text-on-surface">
+    <div className="min-h-dvh flex flex-col bg-background text-on-surface" data-role={role || ""}>
       <TopAppBar title={title} />
       <main className="flex-1 pt-14 pb-20 max-w-[1024px] w-full mx-auto">{children}</main>
     </div>

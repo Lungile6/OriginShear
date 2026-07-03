@@ -1,0 +1,25 @@
+STRATEGY B (Data Values) — API Input Validation
+Command: npm run assess:test-data-values
+Tool: Jest + Supertest
+Date: 2026-07-03
+
+PASS  __tests__/dataValues.integration.test.js
+  Data-value coverage
+    Normal valid input cases
+      ✓ issues a valid auth challenge for a well-formed wallet address (22 ms)
+      ✓ accepts minimum allowed lot weight (22 ms)
+    Edge/boundary input cases
+      ✓ accepts maximum allowed lot weight (16 ms)
+      ✓ accepts all valid fibre type and grade combinations at max weight boundary (6 ms)
+    Invalid/error-handling cases
+      ✓ rejects invalid wallet challenge payload (6 ms)
+      ✓ rejects lot payload below minimum weight (6 ms)
+      ✓ rejects lot payload above maximum weight (12 ms)
+
+Tests:       7 passed, 7 total
+Time:        1.872 s
+
+Data ranges tested:
+- weightGrams: 0 (reject), 1 (min valid), 4000000 (max valid), 4000001 (reject)
+- wallet address: valid 0x format (pass), plain string (reject)
+- fibreType / grade: 0, 1, 2 (all valid enum values)

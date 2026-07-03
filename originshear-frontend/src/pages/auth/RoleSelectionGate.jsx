@@ -79,6 +79,10 @@ export default function RoleSelectionGate() {
       navigate(card.path);
       return;
     }
+    if (card.role === Role.BUYER) {
+      navigate(card.path);
+      return;
+    }
     if (!isConnected) {
       navigate("/connect", { state: { intendedRole: card.role } });
       return;

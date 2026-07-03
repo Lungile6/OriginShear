@@ -1,0 +1,32 @@
+STRATEGY C — Performance Benchmark (Environment 1: MacBook Pro)
+Command: npm run assess:perf
+Tool: Node.js fetch benchmark (scripts/perf-api.js)
+Date: 2026-07-03
+
+Environment:
+  Platform:     macOS 13 (darwin 22.6.0)
+  CPU:          Intel Core i5-7360U @ 2.30GHz, 4 cores
+  RAM:          16 GB
+  Node.js:      v20.20.2
+  API Server:   Express on localhost:3000
+
+Config:
+  Requests per endpoint: 120
+  Concurrency:           12
+  Endpoints:             /health
+
+Results:
+  Endpoint      /health
+  Elapsed       282 ms
+  Throughput    425 req/s
+  Latency min   2.67 ms
+  Latency avg   23.14 ms
+  Latency p95   67.41 ms
+  Latency max   108.91 ms
+  Success rate  120/120 (100%)
+
+Notes:
+- API is single-process Node.js with in-process caching (node-cache, 5 min TTL)
+- Rate limiter configured at 50 req/15 min per IP (exempt on /health)
+- gzip compression enabled via Express compression middleware
+- Full JSON report saved to evidence/performance/

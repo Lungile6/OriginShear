@@ -1,46 +1,57 @@
-import { useChainId, useReadContract, useReadContracts } from "wagmi";
-import { HARVEST_LEDGER_ABI } from "../contracts/HarvestLedger";
-import { getContractAddresses } from "../contracts/addresses";
+import { useCallback, useEffect, useState } from "react";
+import { apiClient } from "../lib/apiClient";
 
 /**
- * Fetches the connected farmer's lot IDs, then batches a getLot() read for
- * each one. Returns a flattened, ready-to-render array of lot objects.
+ * Fetches farmer lots from the API (subgraph-backed).
  */
 export function useFarmerLots(farmerAddress) {
-  const chainId = useChainId();
-  const addresses = getContractAddresses(chainId);
-  const ledgerContract = addresses ? { address: addresses.harvestLedger, abi: HARVEST_LEDGER_ABI } : null;
+  const [lots, setLots] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { data: lotIds, isLoading: loadingIds, refetch: refetchIds } = useReadContract({
-    ...ledgerContract,
-    functionName: "getFarmerLots",
-    args: farmerAddress ? [farmerAddress] : undefined,
-    query: { enabled: Boolean(ledgerContract && farmerAddress) },
-  });
+  const fetchLots = useCallback(async () => {
+    if (!farmerAddress) {
+      setLots([]);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const response = await apiClient.get(`/api/farmers/${farmerAddress}/lots?page=1&limit=200`, {
+        auth: true,
+      });
+      const mapped = (response.data || []).map((lot) => ({
+        lotId: BigInt(lot.lotId || "0"),
+        farmer: lot.farmer?.wallet || lot.farmer?.id || "",
+        fibreType: Number(lot.fibreType ?? 0),
+        grade: Number(lot.grade ?? 0),
+        weightGrams: BigInt(lot.weightGrams || "0"),
+        gpsZone: lot.gpsZone || "",
+        seasonYear: lot.seasonYear || "",
+        proofOfOrigin: lot.proofOfOrigin || "",
+        status: Number(lot.status ?? 0),
+        registeredAt: BigInt(lot.registeredAt || "0"),
+        validatedAt: lot.validatedAt ? BigInt(lot.validatedAt) : 0n,
+        validatedBy: lot.validatedBy || "0x0000000000000000000000000000000000000000",
+        metadataURI: lot.metadataURI || "",
+      }));
+      setLots(mapped.sort((a, b) => Number(b.lotId) - Number(a.lotId)));
+    } catch (err) {
+      console.error("Error loading farmer lots from API:", err);
+      setLots([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [farmerAddress]);
 
-  const {
-    data: lotResults,
-    isLoading: loadingLots,
-    refetch: refetchLots,
-  } = useReadContracts({
-    contracts:
-      ledgerContract && lotIds
-        ? lotIds.map((id) => ({ ...ledgerContract, functionName: "getLot", args: [id] }))
-        : [],
-    query: { enabled: Boolean(ledgerContract && lotIds && lotIds.length > 0) },
-  });
-
-  const lots = (lotResults ?? [])
-    .filter((r) => r.status === "success")
-    .map((r) => r.result)
-    .sort((a, b) => Number(b.lotId) - Number(a.lotId)); // newest first
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void fetchLots();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchLots]);
 
   return {
     lots,
-    isLoading: loadingIds || loadingLots,
-    refetch: () => {
-      refetchIds();
-      refetchLots();
-    },
+    isLoading,
+    refetch: fetchLots,
   };
 }

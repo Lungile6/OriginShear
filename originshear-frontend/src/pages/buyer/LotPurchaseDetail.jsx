@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   useAccount,
@@ -48,17 +48,21 @@ export default function LotPurchaseDetail() {
     query: { enabled: Boolean(addresses && offerId && Number(offerId) > 0) },
   });
 
-  const offerData = offer
-    ? {
-        offerId: offer[0],
-        lotId: offer[1],
-        farmer: offer[2],
-        askPriceWei: offer[3],
-        buyer: offer[4],
-        escrowAmount: offer[5],
-        status: offer[6],
-      }
-    : null;
+  const offerData = useMemo(
+    () =>
+      offer
+        ? {
+            offerId: offer[0],
+            lotId: offer[1],
+            farmer: offer[2],
+            askPriceWei: offer[3],
+            buyer: offer[4],
+            escrowAmount: offer[5],
+            status: offer[6],
+          }
+        : null,
+    [offer]
+  );
 
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: addresses?.cUSD,
@@ -82,27 +86,32 @@ export default function LotPurchaseDetail() {
     isListed &&
     offerData?.askPriceWei &&
     BigInt(allowance ?? 0n) < BigInt(offerData.askPriceWei);
+  const canPurchase = Boolean(address && addresses?.farmerMarket);
 
   useEffect(() => {
     if (!isSuccess || !purchaseStep) return;
 
     if (purchaseStep === "approve" && offerData?.offerId && addresses?.farmerMarket) {
       reset();
-      setPurchaseStep("purchase");
-      writeContract({
-        address: addresses.farmerMarket,
-        abi: FARMER_MARKET_ABI,
-        functionName: "purchaseLot",
-        args: [offerData.offerId],
-      });
+      setTimeout(() => {
+        setPurchaseStep("purchase");
+        writeContract({
+          address: addresses.farmerMarket,
+          abi: FARMER_MARKET_ABI,
+          functionName: "purchaseLot",
+          args: [offerData.offerId],
+        });
+      }, 0);
       return;
     }
 
     if (purchaseStep === "purchase") {
-      setPurchaseStep(null);
-      refetchOffer();
-      refetchAllowance();
-      reset();
+      setTimeout(() => {
+        setPurchaseStep(null);
+        refetchOffer();
+        refetchAllowance();
+        reset();
+      }, 0);
     }
   }, [
     isSuccess,
@@ -138,10 +147,35 @@ export default function LotPurchaseDetail() {
     });
   }
 
-  if (loadingLot || !lot) {
+  if (loadingLot) {
     return (
       <AppLayout role="BUYER" title="ORIGINSHEAR">
         <p className="px-4 py-6 text-body-sm text-on-surface-variant">Loading lot…</p>
+      </AppLayout>
+    );
+  }
+
+  if (!addresses) {
+    return (
+      <AppLayout role="BUYER" title="ORIGINSHEAR">
+        <div className="px-4 py-6">
+          <p className="text-body-sm text-on-surface-variant mb-3">
+            Marketplace contracts are not available on your current network.
+          </p>
+          <Link to="/connect" className="text-primary font-bold text-label-sm">
+            Connect wallet and switch network
+          </Link>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!lot) {
+    return (
+      <AppLayout role="BUYER" title="ORIGINSHEAR">
+        <p className="px-4 py-6 text-body-sm text-on-surface-variant">
+          Lot not found or not available right now.
+        </p>
       </AppLayout>
     );
   }
@@ -175,9 +209,16 @@ export default function LotPurchaseDetail() {
         </div>
 
         <section className="mb-6">
-          <h2 className="text-label-lg text-on-surface-variant uppercase tracking-widest mb-3">
-            <BilingualText en="Origin Verification" st="Netefatso ea Tšimo" size="label-lg" />
-          </h2>
+          <div className="flex items-center justify-between mb-3 gap-3">
+            <h2 className="text-label-lg text-on-surface-variant uppercase tracking-widest">
+              <BilingualText en="Origin Verification" st="Netefatso ea Tšimo" size="label-lg" />
+            </h2>
+            {proof && (
+              <Link to={`/buyer/verify/lot/${lotId}?proof=${proof}`} className="text-primary text-label-sm font-bold">
+                Open Full Verify
+              </Link>
+            )}
+          </div>
           <LotVerificationPanel lotId={lotId} proof={proof} showDownloadButton={false} />
         </section>
 
@@ -198,11 +239,16 @@ export default function LotPurchaseDetail() {
                   Deposits {formatCUSD(offerData.askPriceWei)} cUSD into escrow. LNWMGA releases payment
                   to the farmer after physical handover.
                 </p>
+                {!canPurchase && (
+                  <p className="text-label-sm text-on-surface-variant mb-3">
+                    Connect wallet to purchase this selected lot.
+                  </p>
+                )}
                 <button
                   onClick={handlePurchase}
                   disabled={
                     busy ||
-                    !address ||
+                    !canPurchase ||
                     BigInt(balance ?? 0n) < BigInt(offerData.askPriceWei ?? 0n)
                   }
                   className="w-full h-14 rounded-lg bg-primary text-on-primary font-semibold disabled:opacity-60"
@@ -211,11 +257,18 @@ export default function LotPurchaseDetail() {
                     ? purchaseStep === "approve"
                       ? "Approving cUSD…"
                       : "Confirming purchase…"
+                    : !canPurchase
+                      ? "Connect Wallet to Buy"
                     : needsApproval
                       ? `Approve & Buy · ${formatCUSD(offerData.askPriceWei)} cUSD`
                       : `Buy Lot · ${formatCUSD(offerData.askPriceWei)} cUSD`}
                 </button>
-                {BigInt(balance ?? 0n) < BigInt(offerData.askPriceWei ?? 0n) && (
+                {!canPurchase && (
+                  <Link to="/connect" className="text-primary text-label-sm font-bold mt-2 inline-block">
+                    Go to Connect
+                  </Link>
+                )}
+                {canPurchase && BigInt(balance ?? 0n) < BigInt(offerData.askPriceWei ?? 0n) && (
                   <p className="text-label-sm text-error mt-2">
                     Insufficient cUSD balance (≈ {cusdToLSL(offerData.askPriceWei)} LSL needed)
                   </p>

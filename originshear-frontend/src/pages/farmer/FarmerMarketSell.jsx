@@ -7,6 +7,7 @@ import { usePaymentHistory } from "../../hooks/usePaymentHistory";
 import { LotStatus, FibreTypeLabel, GradeLabel } from "../../contracts/HarvestLedger";
 import { FARMER_MARKET_ABI, OfferStatus, OfferStatusLabel } from "../../contracts/FarmerMarket";
 import { getContractAddresses } from "../../contracts/addresses";
+import { apiClient } from "../../lib/apiClient";
 import { gramsToKg, formatCUSD, cusdToLSL, parseCUSD, shorten } from "../../lib/utils";
 
 export default function FarmerMarketSell() {
@@ -58,8 +59,6 @@ export default function FarmerMarketSell() {
   const listedLotIds = new Set(offers.map((o) => o.lotId.toString()));
   const sellableLots = validatedUnlisted.filter((l) => !listedLotIds.has(l.lotId.toString()));
   const activeOffers = offers.filter((o) => o.status === OfferStatus.IN_ESCROW || o.status === OfferStatus.LISTED);
-  const completedOffers = offers.filter((o) => o.status === OfferStatus.COMPLETED);
-
   return (
     <AppLayout role="FARMER" title="ORIGINSHEAR">
       <div className="px-4 pt-2 pb-8">
@@ -106,7 +105,14 @@ export default function FarmerMarketSell() {
             </h2>
             <div className="space-y-3 mb-6">
               {activeOffers.map((offer) => (
-                <ActiveOfferCard key={offer.offerId.toString()} offer={offer} />
+                <ActiveOfferCard
+                  key={offer.offerId.toString()}
+                  offer={offer}
+                  onReleased={() => {
+                    refetch();
+                    refetchOffers();
+                  }}
+                />
               ))}
             </div>
           </>
@@ -196,19 +202,25 @@ function SellableLotCard({ lot, marketAddress, onListed }) {
   );
 }
 
-function ActiveOfferCard({ offer }) {
-  const { writeContract, data: hash, isPending } = useWriteContract();
-  const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
-  const chainId = useChainId();
-  const addresses = getContractAddresses(chainId);
+function ActiveOfferCard({ offer, onReleased }) {
+  const [isReleasing, setIsReleasing] = useState(false);
+  const [releaseError, setReleaseError] = useState("");
 
-  function handleRelease() {
-    writeContract({
-      address: addresses.farmerMarket,
-      abi: FARMER_MARKET_ABI,
-      functionName: "releasePayment",
-      args: [offer.offerId],
-    });
+  async function handleRelease() {
+    setIsReleasing(true);
+    setReleaseError("");
+    try {
+      await apiClient.post(
+        `/api/market/offers/${offer.offerId.toString()}/release`,
+        {},
+        { auth: true }
+      );
+      onReleased?.();
+    } catch (err) {
+      setReleaseError(err?.message || "Failed to release payment");
+    } finally {
+      setIsReleasing(false);
+    }
   }
 
   return (
@@ -225,12 +237,13 @@ function ActiveOfferCard({ offer }) {
         {offer.status === OfferStatus.IN_ESCROW && (
           <button
             onClick={handleRelease}
-            disabled={isPending || isConfirming}
+            disabled={isReleasing}
             className="block h-9 px-4 rounded-lg border border-outline-variant text-on-surface text-label-sm font-semibold disabled:opacity-60"
           >
-            {isPending || isConfirming ? "…" : "Release Fibre"}
+            {isReleasing ? "…" : "Release Fibre"}
           </button>
         )}
+        {releaseError && <p className="text-label-sm text-error mt-2">{releaseError}</p>}
       </div>
     </div>
   );

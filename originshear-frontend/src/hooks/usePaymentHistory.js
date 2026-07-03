@@ -1,86 +1,48 @@
 import { useEffect, useState } from "react";
-import { useChainId, usePublicClient } from "wagmi";
-import { FARMER_MARKET_ABI } from "../contracts/FarmerMarket";
-import { getContractAddresses } from "../contracts/addresses";
+import { apiClient } from "../lib/apiClient";
 
 /**
- * Hook to retrieve on-chain payment history by reading PaymentReleased logs
- * from the FarmerMarket contract, then augmenting them with offer details (buyer, lotId).
- * Works for both Farmers (viewing earnings) and Buyers (viewing purchases).
+ * Loads payment history from API for both farmer and buyer views.
  */
 export function usePaymentHistory(userAddress) {
-  const chainId = useChainId();
-  const addresses = getContractAddresses(chainId);
-  const publicClient = usePublicClient();
   const [payments, setPayments] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!publicClient || !addresses?.farmerMarket || !userAddress) return;
+    if (!userAddress) return;
 
     let active = true;
-    setIsLoading(true);
 
-    async function fetchLogs() {
+    async function fetchPayments() {
+      if (active) setIsLoading(true);
       try {
-        const logs = await publicClient.getContractEvents({
-          address: addresses.farmerMarket,
-          abi: FARMER_MARKET_ABI,
-          eventName: "PaymentReleased",
-          fromBlock: "earliest",
-        });
+        const [asFarmer, asBuyer] = await Promise.all([
+          apiClient.get(`/api/market/payments?page=1&limit=200&farmer=${userAddress}`, { auth: true }),
+          apiClient.get(`/api/market/payments?page=1&limit=200&buyer=${userAddress}`, { auth: true }),
+        ]);
 
-        const mapped = logs.map((log) => ({
-          offerId: log.args.offerId,
-          farmer: log.args.farmer,
-          netAmount: log.args.netAmount,
-          fee: log.args.fee,
-          transactionHash: log.transactionHash,
-          blockNumber: log.blockNumber,
+        const combined = [...(asFarmer.data || []), ...(asBuyer.data || [])];
+        const deduped = Array.from(new Map(combined.map((item) => [item.id, item])).values());
+        const mapped = deduped.map((payment) => ({
+          id: payment.id,
+          offerId: BigInt(payment.offer?.offerId || "0"),
+          farmer: payment.farmer || "",
+          netAmount: BigInt(payment.netAmount || "0"),
+          fee: BigInt(payment.fee || "0"),
+          timestamp: BigInt(payment.timestamp || "0"),
+          lotId: BigInt(payment.offer?.lot?.lotId || "0"),
+          askPriceWei: BigInt(payment.offer?.askPriceWei || "0"),
+          buyer: payment.offer?.buyer || "",
         }));
 
-        // Query details for each offer to check who the buyer was
-        const detailedPayments = await Promise.all(
-          mapped.map(async (p) => {
-            try {
-              const offerResult = await publicClient.readContract({
-                address: addresses.farmerMarket,
-                abi: FARMER_MARKET_ABI,
-                functionName: "offers",
-                args: [p.offerId],
-              });
-              return {
-                ...p,
-                lotId: offerResult[1],
-                askPriceWei: offerResult[3],
-                buyer: offerResult[4],
-              };
-            } catch (err) {
-              console.error(`Error fetching offer details for ID ${p.offerId}:`, err);
-              return {
-                ...p,
-                lotId: 0n,
-                askPriceWei: 0n,
-                buyer: "",
-              };
-            }
-          })
-        );
-
-        const filtered = detailedPayments.filter(
-          (p) =>
-            p.farmer?.toLowerCase() === userAddress.toLowerCase() ||
-            p.buyer?.toLowerCase() === userAddress.toLowerCase()
-        );
-
-        // Sort newest first
-        filtered.sort((a, b) => Number(b.blockNumber || 0n) - Number(a.blockNumber || 0n));
+        mapped.sort((a, b) => Number(b.timestamp || 0n) - Number(a.timestamp || 0n));
 
         if (active) {
-          setPayments(filtered);
+          setPayments(mapped);
         }
       } catch (err) {
-        console.error("Error reading PaymentReleased event logs:", err);
+        console.error("Error loading payment history from API:", err);
+        if (active) setPayments([]);
       } finally {
         if (active) {
           setIsLoading(false);
@@ -88,12 +50,15 @@ export function usePaymentHistory(userAddress) {
       }
     }
 
-    fetchLogs();
+    const timer = setTimeout(() => {
+      void fetchPayments();
+    }, 0);
 
     return () => {
+      clearTimeout(timer);
       active = false;
     };
-  }, [publicClient, addresses, userAddress]);
+  }, [userAddress]);
 
   return { payments, isLoading };
 }

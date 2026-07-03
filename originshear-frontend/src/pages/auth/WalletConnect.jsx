@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAccount, useConnect } from "wagmi";
+import { useAccount, useConnect, useSignMessage } from "wagmi";
 import { useNetworkGuard } from "../../hooks/useNetworkGuard";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+import { apiClient, setApiToken } from "../../lib/apiClient";
 
 export default function WalletConnect() {
   const navigate = useNavigate();
   const { isConnected, chainId } = useAccount();
   const { connectors, connect, isPending, error } = useConnect();
+  const { signMessageAsync } = useSignMessage();
   const { isWrongNetwork } = useNetworkGuard();
   const [connectingId, setConnectingId] = useState(null);
   const [localError, setLocalError] = useState("");
@@ -24,18 +24,33 @@ export default function WalletConnect() {
 
   async function notifyWalletEvent({ event, connectorName, wallet, errorMessage }) {
     try {
-      await fetch(`${API_BASE_URL}/api/auth/wallet-event`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          event,
-          connector: connectorName,
-          wallet,
-          error: errorMessage,
-        }),
+      await apiClient.post("/api/auth/wallet-event", {
+        event,
+        connector: connectorName,
+        wallet,
+        error: errorMessage,
       });
     } catch {
       // Silent fail: connect flow should continue even if API is unavailable.
+    }
+  }
+
+  async function authenticateApiSession(wallet) {
+    try {
+      const challenge = await apiClient.post("/api/auth/challenge", { wallet });
+
+      const signature = await signMessageAsync({ message: challenge.message });
+
+      const loginPayload = await apiClient.post("/api/auth/login", {
+        wallet,
+        nonce: challenge.nonce,
+        signature,
+      });
+      if (loginPayload?.token) {
+        setApiToken(loginPayload.token);
+      }
+    } catch {
+      // Keep wallet UX resilient even if API auth is unavailable.
     }
   }
 
@@ -71,7 +86,9 @@ export default function WalletConnect() {
             connectorName: connector.name,
             wallet: data?.accounts?.[0],
           });
-          navigate("/role-select", { replace: true });
+          authenticateApiSession(data?.accounts?.[0]).finally(() => {
+            navigate("/role-select", { replace: true });
+          });
         },
       }
     );
@@ -90,7 +107,6 @@ export default function WalletConnect() {
   const valoraConnector = uniqueConnectors.find((c) =>
     c.name.toLowerCase().includes("valora")
   );
-  const hasMetaMaskProvider = Boolean(window?.ethereum?.isMetaMask || window?.ethereum?.providers?.some?.((p) => p?.isMetaMask));
 
   return (
     <div className="min-h-dvh flex flex-col bg-background">

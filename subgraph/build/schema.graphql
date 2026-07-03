@@ -1,4 +1,4 @@
-type Farmer @entity {
+type Farmer @entity(immutable: false) {
   id: ID!
   wallet: Bytes!
   farmerId: String!
@@ -12,7 +12,7 @@ type Farmer @entity {
   createdAt: BigInt!
 }
 
-type Lot @entity {
+type Lot @entity(immutable: false) {
   id: ID!
   lotId: BigInt!
   farmer: Farmer!
@@ -31,7 +31,7 @@ type Lot @entity {
   createdAt: BigInt!
 }
 
-type Validation @entity {
+type Validation @entity(immutable: false) {
   id: ID!
   lot: Lot!
   validator: Bytes!
@@ -39,7 +39,7 @@ type Validation @entity {
   timestamp: BigInt!
 }
 
-type Offer @entity {
+type Offer @entity(immutable: false) {
   id: ID!
   offerId: BigInt!
   lot: Lot!
@@ -55,7 +55,7 @@ type Offer @entity {
   createdAt: BigInt!
 }
 
-type Purchase @entity {
+type Purchase @entity(immutable: false) {
   id: ID!
   offer: Offer!
   buyer: Bytes!
@@ -63,7 +63,7 @@ type Purchase @entity {
   timestamp: BigInt!
 }
 
-type Payment @entity {
+type Payment @entity(immutable: false) {
   id: ID!
   offer: Offer!
   farmer: Bytes!
@@ -72,7 +72,7 @@ type Payment @entity {
   timestamp: BigInt!
 }
 
-type Mark @entity {
+type Mark @entity(immutable: false) {
   id: ID!
   markId: BigInt!
   farmer: Farmer!

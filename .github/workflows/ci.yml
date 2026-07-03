@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  frontend-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            package-lock.json
+            originshear-frontend/package-lock.json
+            originshear-contracts/package-lock.json
+
+      - name: Install root workspaces
+        run: npm ci
+
+      - name: Frontend build
+        run: npm run build
+
+      - name: Contract tests
+        run: npm run test --workspace=originshear-contracts
+
+  api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install API dependencies
+        run: npm ci
+
+      - name: API tests
+        env:
+          JWT_SECRET: ci-test-secret
+          GRAPHQL_ENDPOINT: https://example.test/graphql
+        run: npm run test:ci
+
+  subgraph:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: subgraph
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: subgraph/package-lock.json
+
+      - name: Install subgraph dependencies
+        run: npm ci
+
+      - name: Subgraph build
+        run: npm run build
