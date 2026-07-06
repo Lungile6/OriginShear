@@ -1,6 +1,6 @@
 import { http, createConfig } from "wagmi";
 import { celo, hardhat } from "wagmi/chains";
-import { injected, metaMask } from "wagmi/connectors";
+import { injected } from "wagmi/connectors";
 import { defineChain } from "viem";
 
 const DEFAULT_CELO_SEPOLIA_RPC_URL =
@@ -27,12 +27,9 @@ export const celoSepolia = defineChain({
 export const wagmiConfig = createConfig({
   chains: [celoSepolia, celo, hardhat],
   connectors: [
-    metaMask({
-      dappMetadata: {
-        name: "ORIGINSHEAR",
-        url: typeof window !== "undefined" ? window.location.origin : "http://localhost:5173",
-      },
-      // Improves reliability when provider appears slightly after page load.
+    // Use injected MetaMask instead of metaMask() to avoid the ~570 KB @metamask/connect-evm SDK bundle.
+    injected({
+      target: "metaMask",
       unstable_shimAsyncInject: 1500,
     }),
     injected({
@@ -54,8 +51,8 @@ export const wagmiConfig = createConfig({
   ],
   transports: {
     [celoSepolia.id]: http(DEFAULT_CELO_SEPOLIA_RPC_URL),
-    [celo.id]:        http("https://forno.celo.org"),
-    [hardhat.id]:     http("http://127.0.0.1:8545"),
+    [celo.id]: http("https://forno.celo.org"),
+    [hardhat.id]: http("http://127.0.0.1:8545"),
   },
 });
 
