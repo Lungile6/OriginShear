@@ -6,6 +6,7 @@ import { useAccount, useChainId, useReadContract, useReadContracts } from "wagmi
 import { HARVEST_LEDGER_ABI } from "../contracts/HarvestLedger";
 import { INDUSTRY_MARK_REGISTRY_ABI } from "../contracts/IndustryMarkRegistry";
 import { getContractAddresses } from "../contracts/addresses";
+import { DEV_BYPASS_ROLE_GUARDS } from "../lib/devBypass";
 
 const RoleContext = createContext(null);
 
@@ -74,6 +75,23 @@ export function RoleProvider({ children }) {
   });
 
   const value = useMemo(() => {
+    if (DEV_BYPASS_ROLE_GUARDS) {
+      return {
+        isConnected,
+        address,
+        chainId,
+        hasContracts: true,
+        isLoadingRoles: false,
+        roles: [Role.FARMER, Role.VALIDATOR, Role.GOVERNMENT, Role.BUYER],
+        primaryRole: Role.GOVERNMENT,
+        isFarmer: true,
+        isValidator: true,
+        isAdmin: true,
+        isGovPublisher: true,
+        farmerProfile: null,
+      };
+    }
+
     const [isFarmer, isValidator, isAdmin, isGovPublisher] = roleChecks?.map((r) => r.result) ?? [
       false,
       false,

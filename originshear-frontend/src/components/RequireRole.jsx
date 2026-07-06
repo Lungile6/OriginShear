@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useRole } from "../context/RoleContext";
+import { DEV_BYPASS_ROLE_GUARDS } from "../lib/devBypass";
 
 /**
  * Guards a route behind wallet connection + an on-chain role check.
@@ -10,6 +11,10 @@ import { useRole } from "../context/RoleContext";
  *   (typically a role-specific "pending access" onboarding screen)
  */
 export default function RequireRole({ role, redirectTo, children }) {
+  if (DEV_BYPASS_ROLE_GUARDS) {
+    return children;
+  }
+
   const location = useLocation();
   const { isConnected } = useAccount();
   const { roles, isLoadingRoles, hasContracts } = useRole();
