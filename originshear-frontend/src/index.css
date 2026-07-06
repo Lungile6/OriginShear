@@ -2,30 +2,28 @@
 
 /*
   ORIGINSHEAR design tokens.
-  Source of truth: agrarian_trust_2/DESIGN.md from the Stitch export,
-  reconciled against the actual color values used across shipped screens
-  (e.g. primary green rendered as #00694c/#008560 rather than the
-  marketing-doc #1D9E75 — we keep the shipped values for visual continuity).
+  Source of truth: stitch_originshear 3/agrarian_trust/DESIGN.md (mobile-first)
+  and stitch_originshear2/agrarian_trust_2/DESIGN.md (desktop/marketing).
 */
 @theme {
-  /* ---- Color: surfaces ---- */
-  --color-surface: #f5fbf5;
-  --color-surface-dim: #d6dbd6;
-  --color-surface-bright: #f5fbf5;
+  /* ---- Color: surfaces (warm off-white — Stitch mobile palette) ---- */
+  --color-surface: #fcf9f5;
+  --color-surface-dim: #dcdad6;
+  --color-surface-bright: #fcf9f5;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #eff5ef;
-  --color-surface-container: #eaefea;
-  --color-surface-container-high: #e4eae4;
-  --color-surface-container-highest: #dee4de;
-  --color-on-surface: #171d1a;
+  --color-surface-container-low: #f6f3ef;
+  --color-surface-container: #f0edea;
+  --color-surface-container-high: #ebe8e4;
+  --color-surface-container-highest: #e5e2de;
+  --color-on-surface: #1c1c1a;
   --color-on-surface-variant: #3d4943;
-  --color-inverse-surface: #2c322e;
-  --color-inverse-on-surface: #ecf2ed;
+  --color-inverse-surface: #31302e;
+  --color-inverse-on-surface: #f3f0ec;
   --color-outline: #6d7a73;
   --color-outline-variant: #bccac1;
-  --color-background: #f5fbf5;
-  --color-on-background: #171d1a;
-  --color-surface-variant: #dee4de;
+  --color-background: #fcf9f5;
+  --color-on-background: #1c1c1a;
+  --color-surface-variant: #e5e2de;
 
   /* ---- Color: brand / primary (green) ---- */
   --color-primary: #00694c;
@@ -38,7 +36,7 @@
   --color-on-primary-fixed: #002115;
   --color-on-primary-fixed-variant: #00513a;
 
-  /* ---- Color: secondary (slate blue — used for buyer accents) ---- */
+  /* ---- Color: secondary (slate blue — buyer accents) ---- */
   --color-secondary: #4f5e81;
   --color-on-secondary: #ffffff;
   --color-secondary-container: #c5d4fd;
@@ -48,15 +46,15 @@
   --color-on-secondary-fixed: #0a1a3a;
   --color-on-secondary-fixed-variant: #384668;
 
-  /* ---- Color: tertiary (warm red/amber — warnings, rejections) ---- */
-  --color-tertiary: #993f3a;
+  /* ---- Color: tertiary (amber — warnings / pending per Stitch mobile) ---- */
+  --color-tertiary: #805200;
   --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #b85751;
+  --color-tertiary-container: #a16900;
   --color-on-tertiary-container: #fffbff;
-  --color-tertiary-fixed: #ffdad6;
-  --color-tertiary-fixed-dim: #ffb3ad;
-  --color-on-tertiary-fixed: #410003;
-  --color-on-tertiary-fixed-variant: #7e2a27;
+  --color-tertiary-fixed: #ffddb4;
+  --color-tertiary-fixed-dim: #ffb955;
+  --color-on-tertiary-fixed: #291800;
+  --color-on-tertiary-fixed-variant: #633f00;
 
   /* ---- Color: error ---- */
   --color-error: #ba1a1a;
@@ -64,7 +62,7 @@
   --color-error-container: #ffdad6;
   --color-on-error-container: #93000a;
 
-  /* ---- Color: ORIGINSHEAR role identity (from project docs) ---- */
+  /* ---- Color: ORIGINSHEAR role identity ---- */
   --color-role-farmer: #1d9e75;
   --color-role-validator: #1b2a4a;
   --color-role-government: #f5a623;
@@ -78,13 +76,14 @@
   --text-headline-xl--font-weight: 700;
   --text-headline-xl--letter-spacing: -0.02em;
 
-  --text-headline-lg: 32px;
-  --text-headline-lg--line-height: 40px;
-  --text-headline-lg--font-weight: 600;
+  --text-headline-lg: 30px;
+  --text-headline-lg--line-height: 36px;
+  --text-headline-lg--font-weight: 700;
+  --text-headline-lg--letter-spacing: -0.02em;
 
   --text-headline-md: 24px;
-  --text-headline-md--line-height: 32px;
-  --text-headline-md--font-weight: 600;
+  --text-headline-md--line-height: 30px;
+  --text-headline-md--font-weight: 700;
 
   --text-headline-sm: 20px;
   --text-headline-sm--line-height: 26px;
@@ -99,22 +98,26 @@
   --text-body-sm: 14px;
   --text-body-sm--line-height: 20px;
 
-  --text-label-lg: 14px;
-  --text-label-lg--line-height: 16px;
+  --text-label-lg: 16px;
+  --text-label-lg--line-height: 20px;
   --text-label-lg--font-weight: 600;
-  --text-label-lg--letter-spacing: 0.05em;
+  --text-label-lg--letter-spacing: 0.01em;
 
   --text-label-md: 12px;
   --text-label-md--line-height: 14px;
   --text-label-md--font-weight: 600;
 
-  /* ---- Radius ---- */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
+  --text-label-sm: 12px;
+  --text-label-sm--line-height: 16px;
+  --text-label-sm--font-weight: 500;
 
-  /* ---- Spacing (8px base unit) ---- */
+  /* ---- Radius (Stitch: cards 12px, buttons 10px, inputs 8px) ---- */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+
+  /* ---- Spacing (8px base, mobile-first) ---- */
   --spacing-touch-target-min: 48px;
   --spacing-margin-mobile: 16px;
   --spacing-gutter-mobile: 12px;
@@ -131,8 +134,13 @@
     min-height: 100dvh;
   }
 
-  /* Hide scrollbars for horizontally-scrolling stat/chip rows, as used
-     throughout the Farmer dashboard and marks rail. */
+  .material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+    display: inline-block;
+    vertical-align: middle;
+    line-height: 1;
+  }
+
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -145,10 +153,21 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 
-  /* Visible focus rings everywhere — required for validators/ministry
-     staff using keyboard nav on desktop, and good practice generally. */
   :focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
+  }
+
+  [data-role="FARMER"] .role-accent-bar {
+    background-color: var(--color-role-farmer);
+  }
+  [data-role="VALIDATOR"] .role-accent-bar {
+    background-color: var(--color-role-validator);
+  }
+  [data-role="GOVERNMENT"] .role-accent-bar {
+    background-color: var(--color-role-government);
+  }
+  [data-role="BUYER"] .role-accent-bar {
+    background-color: var(--color-role-buyer);
   }
 }
