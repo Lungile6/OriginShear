@@ -1,49 +1,47 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Outlet, useLocation, Navigate, useParams } from "react-router-dom";
 import RequireRole from "./components/RequireRole";
 import { Role } from "./context/RoleContext";
 import { RegisterLotProvider } from "./pages/farmer/RegisterLotContext";
 import BottomNav from "./components/nav/BottomNav";
 
-// Public
-import LandingPage from "./pages/public/LandingPage";
-import NotFound from "./pages/public/NotFound";
+const LandingPage = lazy(() => import("./pages/public/LandingPage"));
+const NotFound = lazy(() => import("./pages/public/NotFound"));
 
-// Auth
-import Splash from "./pages/auth/Splash";
-import WalletConnect from "./pages/auth/WalletConnect";
-import RoleSelectionGate from "./pages/auth/RoleSelectionGate";
-import WrongNetwork from "./pages/auth/WrongNetwork";
-import Unauthorized from "./pages/auth/Unauthorized";
-import FarmerOnboarding from "./pages/auth/FarmerOnboarding";
-import ValidatorPending from "./pages/auth/ValidatorPending";
-import GovernmentPending from "./pages/auth/GovernmentPending";
-import NetworkHelp from "./pages/auth/NetworkHelp";
+const Splash = lazy(() => import("./pages/auth/Splash"));
+const WalletConnect = lazy(() => import("./pages/auth/WalletConnect"));
+const RoleSelectionGate = lazy(() => import("./pages/auth/RoleSelectionGate"));
+const WrongNetwork = lazy(() => import("./pages/auth/WrongNetwork"));
+const Unauthorized = lazy(() => import("./pages/auth/Unauthorized"));
+const FarmerOnboarding = lazy(() => import("./pages/auth/FarmerOnboarding"));
+const ValidatorPending = lazy(() => import("./pages/auth/ValidatorPending"));
+const GovernmentPending = lazy(() => import("./pages/auth/GovernmentPending"));
+const NetworkHelp = lazy(() => import("./pages/auth/NetworkHelp"));
 
-// Farmer
-import FarmerDashboard from "./pages/farmer/FarmerDashboard";
-import RegisterLotStep1 from "./pages/farmer/RegisterLotStep1";
-import RegisterLotReview from "./pages/farmer/RegisterLotReview";
-import RegisterLotSuccess from "./pages/farmer/RegisterLotSuccess";
-import MyLotsHistory from "./pages/farmer/MyLotsHistory";
-import LotDetail from "./pages/farmer/LotDetail";
-import QRProofOfOrigin from "./pages/farmer/QRProofOfOrigin";
-import FarmerMarketSell from "./pages/farmer/FarmerMarketSell";
+const FarmerDashboard = lazy(() => import("./pages/farmer/FarmerDashboard"));
+const RegisterLotStep1 = lazy(() => import("./pages/farmer/RegisterLotStep1"));
+const RegisterLotStep2 = lazy(() => import("./pages/farmer/RegisterLotStep2"));
+const RegisterLotReview = lazy(() => import("./pages/farmer/RegisterLotReview"));
+const RegisterLotSuccess = lazy(() => import("./pages/farmer/RegisterLotSuccess"));
+const MyLotsHistory = lazy(() => import("./pages/farmer/MyLotsHistory"));
+const LotDetail = lazy(() => import("./pages/farmer/LotDetail"));
+const QRProofOfOrigin = lazy(() => import("./pages/farmer/QRProofOfOrigin"));
+const FarmerMarketSell = lazy(() => import("./pages/farmer/FarmerMarketSell"));
 
-// Validator
-import ValidatorDashboard from "./pages/validator/ValidatorDashboard";
-import ValidatorQueue from "./pages/validator/ValidatorQueue";
-import ValidatorAuditLog from "./pages/validator/ValidatorAuditLog";
+const ValidatorDashboard = lazy(() => import("./pages/validator/ValidatorDashboard"));
+const ValidatorQueue = lazy(() => import("./pages/validator/ValidatorQueue"));
+const ValidatorAuditLog = lazy(() => import("./pages/validator/ValidatorAuditLog"));
+const ValidatorReleaseQueue = lazy(() => import("./pages/validator/ValidatorReleaseQueue"));
 
-// Government
-import GovernmentDashboard from "./pages/government/GovernmentDashboard";
-import GovernmentNewsHub from "./pages/government/GovernmentNewsHub";
+const GovernmentDashboard = lazy(() => import("./pages/government/GovernmentDashboard"));
+const GovernmentNewsHub = lazy(() => import("./pages/government/GovernmentNewsHub"));
+const GovernmentComposeNews = lazy(() => import("./pages/government/GovernmentComposeNews"));
 
-// Buyer
-import BuyerDashboard from "./pages/buyer/BuyerDashboard";
-import BuyerMarketplace from "./pages/buyer/BuyerMarketplace";
-import LotPurchaseDetail from "./pages/buyer/LotPurchaseDetail";
-import BuyerPurchaseHistory from "./pages/buyer/BuyerPurchaseHistory";
-import BuyerLotVerification from "./pages/buyer/BuyerLotVerification";
+const BuyerDashboard = lazy(() => import("./pages/buyer/BuyerDashboard"));
+const BuyerMarketplace = lazy(() => import("./pages/buyer/BuyerMarketplace"));
+const LotPurchaseDetail = lazy(() => import("./pages/buyer/LotPurchaseDetail"));
+const BuyerPurchaseHistory = lazy(() => import("./pages/buyer/BuyerPurchaseHistory"));
+const BuyerLotVerification = lazy(() => import("./pages/buyer/BuyerLotVerification"));
 
 function RegisterLotFlow() {
   return (
@@ -56,8 +54,6 @@ function RegisterLotFlow() {
 function GlobalBottomNavigation() {
   const { pathname } = useLocation();
 
-  // Keep bottom navigation visible only on route groups where it is expected.
-  // This prevents "public" tabs from appearing on auth/onboarding/error flows.
   let role = null;
   if (pathname === "/" || pathname === "/news") role = "PUBLIC";
   else if (pathname.startsWith("/farmer")) role = "FARMER";
@@ -76,21 +72,26 @@ function LegacyVerifyLotRedirect() {
   return <Navigate to={`/buyer/verify/lot/${lotId}${search}`} replace />;
 }
 
+function PageLoader() {
+  return (
+    <div className="min-h-dvh flex items-center justify-center bg-background">
+      <span
+        className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"
+        aria-label="Loading page"
+      />
+    </div>
+  );
+}
+
 export default function App() {
   return (
-    <>
+    <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Public */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/news" element={<GovernmentNewsHub />} />
-        <Route
-          path="/verify"
-          element={<Navigate to="/buyer/verify" replace />}
-        />
-        <Route
-          path="/verify/lot/:lotId"
-          element={<LegacyVerifyLotRedirect />}
-        />
+        <Route path="/verify" element={<Navigate to="/buyer/verify" replace />} />
+        <Route path="/verify/lot/:lotId" element={<LegacyVerifyLotRedirect />} />
 
         {/* Auth */}
         <Route path="/splash" element={<Splash />} />
@@ -103,143 +104,140 @@ export default function App() {
         <Route path="/onboarding/government" element={<GovernmentPending />} />
         <Route path="/help/network" element={<NetworkHelp />} />
 
-      {/* Farmer (role-gated) */}
-      <Route
-        path="/farmer"
-        element={
-          <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
-            <FarmerDashboard />
-          </RequireRole>
-        }
-      />
-      <Route
-        element={
-          <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
-            <RegisterLotFlow />
-          </RequireRole>
-        }
-      >
-        <Route path="/farmer/register" element={<RegisterLotStep1 />} />
-        <Route path="/farmer/register/review" element={<RegisterLotReview />} />
-      </Route>
-      <Route
-        path="/farmer/register/success"
-        element={
-          <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
-            <RegisterLotSuccess />
-          </RequireRole>
-        }
-      />
-      <Route
-        path="/farmer/lots"
-        element={
-          <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
-            <MyLotsHistory />
-          </RequireRole>
-        }
-      />
-      <Route
-        path="/farmer/lots/:lotId"
-        element={
-          <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
-            <LotDetail />
-          </RequireRole>
-        }
-      />
-      <Route
-        path="/farmer/lots/:lotId/qr"
-        element={
-          <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
-            <QRProofOfOrigin />
-          </RequireRole>
-        }
-      />
-      <Route
-        path="/farmer/market"
-        element={
-          <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
-            <FarmerMarketSell />
-          </RequireRole>
-        }
-      />
-      <Route
-        path="/farmer/news"
-        element={<Navigate to="/news" replace />}
-      />
+        {/* Farmer (role-gated) */}
+        <Route
+          path="/farmer"
+          element={
+            <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
+              <FarmerDashboard />
+            </RequireRole>
+          }
+        />
+        <Route
+          element={
+            <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
+              <RegisterLotFlow />
+            </RequireRole>
+          }
+        >
+          <Route path="/farmer/register" element={<RegisterLotStep1 />} />
+          <Route path="/farmer/register/logistics" element={<RegisterLotStep2 />} />
+          <Route path="/farmer/register/review" element={<RegisterLotReview />} />
+        </Route>
+        <Route
+          path="/farmer/register/success"
+          element={
+            <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
+              <RegisterLotSuccess />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/farmer/lots"
+          element={
+            <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
+              <MyLotsHistory />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/farmer/lots/:lotId"
+          element={
+            <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
+              <LotDetail />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/farmer/lots/:lotId/qr"
+          element={
+            <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
+              <QRProofOfOrigin />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/farmer/market"
+          element={
+            <RequireRole role={Role.FARMER} redirectTo="/onboarding/farmer">
+              <FarmerMarketSell />
+            </RequireRole>
+          }
+        />
+        <Route path="/farmer/news" element={<Navigate to="/news" replace />} />
 
-      {/* Validator (role-gated) */}
-      <Route
-        path="/validator"
-        element={
-          <RequireRole role={Role.VALIDATOR} redirectTo="/onboarding/validator">
-            <ValidatorDashboard />
-          </RequireRole>
-        }
-      />
-      <Route
-        path="/validator/queue"
-        element={
-          <RequireRole role={Role.VALIDATOR} redirectTo="/onboarding/validator">
-            <ValidatorQueue />
-          </RequireRole>
-        }
-      />
-      <Route
-        path="/validator/audit"
-        element={
-          <RequireRole role={Role.VALIDATOR} redirectTo="/onboarding/validator">
-            <ValidatorAuditLog />
-          </RequireRole>
-        }
-      />
+        {/* Validator (role-gated) */}
+        <Route
+          path="/validator"
+          element={
+            <RequireRole role={Role.VALIDATOR} redirectTo="/onboarding/validator">
+              <ValidatorDashboard />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/validator/queue"
+          element={
+            <RequireRole role={Role.VALIDATOR} redirectTo="/onboarding/validator">
+              <ValidatorQueue />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/validator/release"
+          element={
+            <RequireRole role={Role.VALIDATOR} redirectTo="/onboarding/validator">
+              <ValidatorReleaseQueue />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/validator/audit"
+          element={
+            <RequireRole role={Role.VALIDATOR} redirectTo="/onboarding/validator">
+              <ValidatorAuditLog />
+            </RequireRole>
+          }
+        />
 
-      {/* Government (role-gated) */}
-      <Route
-        path="/government"
-        element={
-          <RequireRole role={Role.GOVERNMENT} redirectTo="/onboarding/government">
-            <GovernmentDashboard />
-          </RequireRole>
-        }
-      />
-      <Route
-        path="/government/news"
-        element={<Navigate to="/news" replace />}
-      />
+        {/* Government (role-gated) */}
+        <Route
+          path="/government"
+          element={
+            <RequireRole role={Role.GOVERNMENT} redirectTo="/onboarding/government">
+              <GovernmentDashboard />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/government/news"
+          element={
+            <RequireRole role={Role.GOVERNMENT} redirectTo="/onboarding/government">
+              <GovernmentNewsHub />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/government/news/compose"
+          element={
+            <RequireRole role={Role.GOVERNMENT} redirectTo="/onboarding/government">
+              <GovernmentComposeNews />
+            </RequireRole>
+          }
+        />
 
-      {/* Buyer (public browsing; connect only when purchasing) */}
-      <Route
-        path="/buyer"
-        element={<BuyerDashboard />}
-      />
-      <Route
-        path="/buyer/marketplace"
-        element={<BuyerMarketplace />}
-      />
-      <Route
-        path="/buyer/lots/:lotId"
-        element={<LotPurchaseDetail />}
-      />
-      <Route
-        path="/buyer/purchases"
-        element={<BuyerPurchaseHistory />}
-      />
-      <Route
-        path="/buyer/news"
-        element={<Navigate to="/news" replace />}
-      />
-      <Route
-        path="/buyer/verify"
-        element={<BuyerLotVerification />}
-      />
-      <Route
-        path="/buyer/verify/lot/:lotId"
-        element={<BuyerLotVerification />}
-      />
+        {/* Buyer */}
+        <Route path="/buyer" element={<BuyerDashboard />} />
+        <Route path="/buyer/marketplace" element={<BuyerMarketplace />} />
+        <Route path="/buyer/lots/:lotId" element={<LotPurchaseDetail />} />
+        <Route path="/buyer/purchases" element={<BuyerPurchaseHistory />} />
+        <Route path="/buyer/news" element={<Navigate to="/news" replace />} />
+        <Route path="/buyer/verify" element={<BuyerLotVerification />} />
+        <Route path="/buyer/verify/lot/:lotId" element={<BuyerLotVerification />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
       <GlobalBottomNavigation />
-    </>
+    </Suspense>
   );
 }

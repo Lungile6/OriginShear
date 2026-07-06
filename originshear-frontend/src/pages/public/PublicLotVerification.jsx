@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import LotVerificationPanel from "../../components/lot/LotVerificationPanel";
+import Icon from "../../components/ui/Icon";
+import Card from "../../components/ui/Card";
+import { FormField, inputClassName } from "../../components/ui/FormField";
 
 export default function PublicLotVerification() {
   const params = useParams();
@@ -15,40 +18,43 @@ export default function PublicLotVerification() {
 
   if (!lotId || !proof) {
     return (
-      <div className="min-h-dvh bg-background px-4 py-8">
+      <div className="min-h-dvh bg-background px-margin-mobile py-8">
         <header className="flex items-center gap-2 mb-6">
+          <Icon name="grass" className="text-primary" />
           <span className="text-headline-sm font-bold text-primary uppercase">ORIGINSHEAR</span>
         </header>
-        <div className="max-w-sm mx-auto bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-5">
-          <h1 className="text-headline-sm font-bold mb-4">Verify a Lot</h1>
-          <label className="block text-body-sm font-semibold mb-2">Lot ID</label>
-          <input
-            value={manualLotId}
-            onChange={(e) => setManualLotId(e.target.value)}
-            placeholder="e.g. 12"
-            className="w-full h-12 rounded-lg border border-outline-variant bg-surface-container px-4 mb-4 text-body-sm"
-          />
-          <label className="block text-body-sm font-semibold mb-2">Proof Hash</label>
-          <input
-            value={manualProof}
-            onChange={(e) => setManualProof(e.target.value)}
-            placeholder="0x…"
-            className="w-full h-12 rounded-lg border border-outline-variant bg-surface-container px-4 mb-5 text-body-sm font-mono"
-          />
+        <Card className="max-w-sm mx-auto">
+          <h1 className="text-headline-sm font-bold mb-4 flex items-center gap-2">
+            <Icon name="verified" className="text-primary" />
+            Verify a Lot
+          </h1>
+          <FormField label="Lot ID">
+            <input
+              value={manualLotId}
+              onChange={(e) => setManualLotId(e.target.value)}
+              placeholder="e.g. 12"
+              className={inputClassName}
+            />
+          </FormField>
+          <FormField label="Proof Hash">
+            <input
+              value={manualProof}
+              onChange={(e) => setManualProof(e.target.value)}
+              placeholder="0x…"
+              className={`${inputClassName} font-mono`}
+            />
+          </FormField>
           <LotVerificationPanel lotId={manualLotId} proof={manualProof} showDownloadButton={false} />
-        </div>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-dvh bg-background px-4 py-6">
+    <div className="min-h-dvh bg-background px-margin-mobile py-6">
       <header className="flex items-center gap-2 mb-6">
         <button onClick={() => navigate("/")} className="text-on-surface-variant">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-6 w-6">
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" strokeLinecap="round" />
-          </svg>
+          <Icon name="account_circle" />
         </button>
         <span className="text-headline-sm font-bold text-primary uppercase">ORIGINSHEAR</span>
       </header>

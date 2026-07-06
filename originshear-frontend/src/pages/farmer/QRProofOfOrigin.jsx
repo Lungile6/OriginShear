@@ -6,6 +6,10 @@ import AppLayout from "../../layouts/AppLayout";
 import { HARVEST_LEDGER_ABI, FibreTypeLabel, GradeLabel, LotStatus } from "../../contracts/HarvestLedger";
 import { getContractAddresses } from "../../contracts/addresses";
 import { gramsToKg, shorten } from "../../lib/utils";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import Icon from "../../components/ui/Icon";
+import { LotCardSkeleton } from "../../components/ui/Skeleton";
 
 export default function QRProofOfOrigin() {
   const { lotId } = useParams();
@@ -31,100 +35,96 @@ export default function QRProofOfOrigin() {
   if (isLoading || !lot) {
     return (
       <AppLayout role="FARMER" title="ORIGINSHEAR">
-        <p className="px-4 py-6 text-body-sm text-on-surface-variant">Loading lot…</p>
+        <div className="px-margin-mobile pt-stack-lg max-w-md mx-auto">
+          <LotCardSkeleton />
+        </div>
       </AppLayout>
     );
   }
 
-  // Public verification URL — encoded into the QR so any phone camera
-  // (not just this app) can resolve it to the public_lot_verification page.
   const verifyUrl = `${window.location.origin}/buyer/verify/lot/${lotId}?proof=${lot.proofOfOrigin}`;
 
   return (
     <AppLayout role="FARMER" title="ORIGINSHEAR">
-      <div className="px-4 pt-2 pb-8">
-        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-5 mb-4">
-          <div className="flex justify-between items-start mb-3">
+      <div className="px-margin-mobile pt-stack-lg pb-8 max-w-md mx-auto flex flex-col items-center">
+        <Card className="w-full mb-stack-md">
+          <div className="flex justify-between items-start mb-2">
             <div>
-              <p className="text-label-sm text-on-surface-variant uppercase">Lot Identifier</p>
-              <p className="text-headline-md font-bold text-primary">#{lotId}</p>
+              <span className="text-label-sm text-on-surface-variant uppercase tracking-wider">
+                Lot Identifier
+              </span>
+              <h2 className="text-headline-sm font-bold text-primary">#{lotId}</h2>
             </div>
             {lot.status === LotStatus.VALIDATED && (
-              <span className="inline-flex items-center gap-1 bg-primary text-on-primary rounded-full px-3 py-1 text-label-sm font-semibold">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Validated by LNWMGA
+              <span className="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-label-sm font-semibold flex items-center gap-1">
+                <Icon name="verified" filled size={14} />
+                VALIDATED BY LNWMGA
               </span>
             )}
           </div>
-          <div className="grid grid-cols-3 gap-3 mb-3">
+          <div className="grid grid-cols-3 gap-2 mt-4">
             <Field label="Material" value={FibreTypeLabel[lot.fibreType]} />
             <Field label="Grade" value={`Grade ${GradeLabel[lot.grade]}`} />
             <Field label="Weight" value={`${gramsToKg(lot.weightGrams)}kg`} />
           </div>
-          <hr className="border-outline-variant mb-3" />
-          <p className="text-body-sm text-on-surface-variant flex items-center gap-1.5">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-              <path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z" strokeLinejoin="round" />
-              <circle cx="12" cy="10" r="2.5" />
-            </svg>
-            {lot.gpsZone}, Lesotho
-          </p>
-        </div>
+          <div className="mt-4 pt-3 border-t border-outline-variant flex items-center gap-2">
+            <Icon name="location_on" className="text-on-surface-variant" />
+            <span className="text-body-sm">{lot.gpsZone}, Lesotho</span>
+          </div>
+        </Card>
 
-        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-6 flex flex-col items-center mb-4">
-          <div className="p-3 bg-white rounded-lg">
+        <Card className="w-full flex flex-col items-center p-stack-lg mb-stack-md">
+          <div className="bg-white p-4 border-2 border-primary rounded-2xl mb-4">
             <QRCodeSVG
               value={verifyUrl}
-              size={220}
+              size={192}
               fgColor="#00694c"
               bgColor="#ffffff"
               level="M"
               marginSize={2}
             />
           </div>
-          <p className="text-label-sm text-on-surface-variant uppercase mt-4 mb-1">
+          <label className="text-label-sm text-on-surface-variant block mb-1 w-full text-center">
             Blockchain Proof Hash
-          </p>
+          </label>
           <button
+            type="button"
             onClick={handleCopy}
-            className="w-full flex items-center justify-between bg-surface-container rounded-lg px-3 py-2.5"
+            className="w-full bg-surface-container flex items-center justify-between px-3 py-2 rounded-lg border border-outline-variant group"
           >
-            <code className="text-body-sm">{shorten(lot.proofOfOrigin, 10, 6)}</code>
-            <span className="text-primary text-label-sm font-semibold">{copied ? "Copied!" : "Copy"}</span>
+            <code className="text-body-sm text-primary font-mono truncate mr-2 select-all">
+              {shorten(lot.proofOfOrigin, 10, 6)}
+            </code>
+            <Icon name="content_copy" size={18} className="text-primary shrink-0" />
           </button>
+          {copied && <p className="text-label-sm text-primary mt-1">Copied!</p>}
+        </Card>
+
+        <div className="w-full px-2 mb-stack-lg text-center">
+          <p className="text-body-md font-bold text-on-surface">
+            Show this QR at the export checkpoint for instant verification
+          </p>
+          <p className="text-body-sm text-on-surface-variant italic">Bontša QR ena bokaholimo ho ahloloa</p>
         </div>
 
-        <p className="text-center font-semibold text-body-md mb-1">
-          Show this QR at the export checkpoint for instant verification
-        </p>
-        <p className="text-center italic text-body-sm text-on-surface-variant mb-6">
-          Bontša QR ena bokaholimo ho ahloloa
-        </p>
-
-        <button
-          onClick={() => downloadSvgAsPng(`originshear-lot-${lotId}`)}
-          className="w-full h-14 rounded-lg bg-primary text-on-primary font-semibold mb-3 flex items-center justify-center gap-2"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-            <path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Download QR
-        </button>
-        <button
-          onClick={() => navigator.share?.({ url: verifyUrl, title: `ORIGINSHEAR Lot #${lotId}` })}
-          className="w-full h-12 rounded-lg border border-outline-variant text-on-surface font-semibold flex items-center justify-center gap-2"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-            <circle cx="6" cy="12" r="2.5" />
-            <circle cx="18" cy="6" r="2.5" />
-            <circle cx="18" cy="18" r="2.5" />
-            <path d="M8.2 10.8 15.8 7M8.2 13.2 15.8 17" />
-          </svg>
-          Share
-        </button>
+        <div className="w-full flex flex-col gap-3">
+          <Button
+            size="lg"
+            onClick={() => downloadSvgAsPng(`originshear-lot-${lotId}`)}
+            icon={<Icon name="download" />}
+          >
+            Download QR
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => navigator.share?.({ url: verifyUrl, title: `ORIGINSHEAR Lot #${lotId}` })}
+            icon={<Icon name="share" />}
+            className="border-2 border-primary text-primary"
+          >
+            Share
+          </Button>
+        </div>
       </div>
     </AppLayout>
   );
@@ -132,9 +132,9 @@ export default function QRProofOfOrigin() {
 
 function Field({ label, value }) {
   return (
-    <div>
-      <p className="text-label-sm text-on-surface-variant">{label}</p>
-      <p className="font-bold text-body-md">{value}</p>
+    <div className="flex flex-col">
+      <span className="text-label-sm text-on-surface-variant">{label}</span>
+      <span className="text-body-md font-bold">{value}</span>
     </div>
   );
 }

@@ -2,6 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useNetworkGuard } from "../../hooks/useNetworkGuard";
+import TopAppBar from "../../components/nav/TopAppBar";
+import Button from "../../components/ui/Button";
+import Icon from "../../components/ui/Icon";
+import Card from "../../components/ui/Card";
 
 export default function WrongNetwork() {
   const navigate = useNavigate();
@@ -11,16 +15,12 @@ export default function WrongNetwork() {
 
   return (
     <div className="min-h-dvh flex flex-col bg-background">
-      <header className="flex items-center px-4 py-4 border-b border-outline-variant">
-        <span className="text-headline-sm font-bold text-primary uppercase">ORIGINSHEAR</span>
-      </header>
+      <TopAppBar role="AUTH" />
 
-      <div className="flex-1 flex items-center justify-center px-6">
-        <div className="w-full max-w-sm bg-surface-container-lowest rounded-xl shadow-sm border-t-4 border-t-role-validator border border-outline-variant p-6 text-center">
-          <div className="w-16 h-16 mx-auto rounded-full bg-error-container flex items-center justify-center mb-4 relative">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-8 w-8 text-error">
-              <path d="M9 9a4 4 0 1 1 5 5M15 15l-6-6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+      <div className="flex-1 flex items-center justify-center px-margin-mobile pt-14">
+        <Card className="w-full max-w-sm border-t-4 border-t-role-validator text-center">
+          <div className="w-16 h-16 mx-auto rounded-full bg-error-container flex items-center justify-center mb-4">
+            <Icon name="wifi_off" className="text-error !text-3xl" />
           </div>
           <h1 className="text-headline-md font-bold mb-2">Wrong Network</h1>
           <p className="text-body-md text-on-surface-variant mb-6">
@@ -28,33 +28,27 @@ export default function WrongNetwork() {
             <span className="font-semibold text-on-surface">ORIGINSHEAR</span> runs on Celo Sepolia.
           </p>
 
-          <button
+          <Button
+            variant="navy"
+            size="lg"
             onClick={async () => {
               setSwitchError(null);
               const result = await fixNetwork();
               if (!result.ok) setSwitchError(result.error);
             }}
             disabled={isSwitchingNetwork}
-            className="w-full h-14 rounded-lg bg-role-validator text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+            loading={isSwitchingNetwork}
+            icon={<Icon name="swap_horiz" />}
           >
-            {isSwitchingNetwork ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-                <path d="M7 7h10l-3-3M17 17H7l3 3" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
             Switch to Celo Sepolia
-          </button>
+          </Button>
 
           <button
             onClick={() => navigate("/help/network")}
             className="mt-3 text-body-sm font-semibold text-primary inline-flex items-center gap-1"
           >
             How to switch manually
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-              <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <Icon name="arrow_forward" className="!text-base" />
           </button>
 
           <hr className="my-5 border-outline-variant" />
@@ -74,7 +68,7 @@ export default function WrongNetwork() {
           {switchError && (
             <p className="mt-3 text-body-sm text-error">{switchError.message?.split("\n")[0]}</p>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

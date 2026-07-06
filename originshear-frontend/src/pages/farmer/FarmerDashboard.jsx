@@ -1,17 +1,29 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
 import AppLayout from "../../layouts/AppLayout";
 import { useRole } from "../../context/RoleContext";
 import { useFarmerLots } from "../../hooks/useFarmerLots";
+import { useCusdBalance } from "../../hooks/useCusdBalance";
+import { usePaymentHistory } from "../../hooks/usePaymentHistory";
 import { LotStatus, LotStatusLabel, FibreTypeLabel } from "../../contracts/HarvestLedger";
-import { gramsToKg, timeAgo } from "../../lib/utils";
+import { gramsToKg, timeAgo, formatCUSD, cusdToLSL } from "../../lib/utils";
 import StatusChip from "../../components/ui/StatusChip";
+import StatCard from "../../components/ui/StatCard";
+import QuickAction from "../../components/ui/QuickAction";
+import DashboardHeader from "../../components/ui/DashboardHeader";
+import BilingualText from "../../components/ui/BilingualText";
+import Card from "../../components/ui/Card";
+import Icon from "../../components/ui/Icon";
+import IndustryMarksRail from "../../components/farmer/IndustryMarksRail";
+import { LotCardSkeleton, StatRailSkeleton } from "../../components/ui/Skeleton";
 
 export default function FarmerDashboard() {
   const { address } = useAccount();
   const { farmerProfile } = useRole();
   const { lots, isLoading } = useFarmerLots(address);
+  const { data: balance, isLoading: loadingBalance } = useCusdBalance(address);
+  const { payments, isLoading: loadingPayments } = usePaymentHistory(address);
   const [acknowledgedLots, setAcknowledgedLots] = useState(() => {
     try {
       const stored = localStorage.getItem("originshear_acknowledged_lots");
@@ -24,7 +36,15 @@ export default function FarmerDashboard() {
   const totalWeightKg = farmerProfile ? gramsToKg(farmerProfile.totalWeightGrams) : "0";
   const lotsRegistered = farmerProfile ? Number(farmerProfile.totalLotsRegistered) : 0;
   const pendingCount = lots.filter((l) => l.status === LotStatus.PENDING).length;
-  
+
+  const totalEarnedWei = useMemo(
+    () =>
+      payments
+        .filter((p) => p.farmer?.toLowerCase() === address?.toLowerCase())
+        .reduce((acc, p) => acc + BigInt(p.netAmount || 0n), 0n),
+    [payments, address]
+  );
+
   const validatedLotsNotified = lots.filter(
     (l) => l.status === LotStatus.VALIDATED && !acknowledgedLots.includes(l.lotId.toString())
   );
@@ -36,53 +56,57 @@ export default function FarmerDashboard() {
   }
 
   const recentLots = lots.slice(0, 3);
+  const firstValidatedLot = lots.find((l) => l.status === LotStatus.VALIDATED);
+  const qrTarget = firstValidatedLot ? `/farmer/lots/${firstValidatedLot.lotId}/qr` : "/farmer/lots";
+  const loadingStats = isLoading || loadingBalance || loadingPayments;
 
   return (
     <AppLayout role="FARMER" title="ORIGINSHEAR">
-      <div className="px-4 py-3 flex justify-between items-center">
-        <div>
-          <p className="text-label-sm text-on-surface-variant">
-            ID: {farmerProfile?.farmerId || "—"}
-          </p>
-          <p className="text-label-sm font-bold flex items-center gap-1">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
-              <path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z" strokeLinejoin="round" />
-              <circle cx="12" cy="10" r="2.5" />
-            </svg>
-            {farmerProfile?.district || "—"}
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-          <span className="text-label-sm font-bold text-primary">LIVE LEDGER</span>
-        </div>
-      </div>
+      <DashboardHeader
+        role="FARMER"
+        subtitle={`ID: ${farmerProfile?.farmerId || "—"}`}
+        detail={farmerProfile?.district || "—"}
+      />
 
-      <section className="px-4 flex gap-3 overflow-x-auto hide-scrollbar pb-1">
-        <StatCard label="Lots Registered" st="Loto tse ngolisitsoeng" value={lotsRegistered} />
-        <StatCard label="Total Weight" st="Boima kaofela" value={totalWeightKg} unit="kg" />
-        <Link
-          to="/farmer/market"
-          className="min-w-[200px] bg-primary text-on-primary p-4 rounded-xl shadow-sm shrink-0"
-        >
-          <span className="text-label-sm uppercase tracking-wide text-primary-fixed">
-            Earnings / Melemo
-          </span>
-          <p className="text-headline-sm font-bold mt-1">View Market →</p>
-        </Link>
+      <section className="mt-stack-md">
+        <div className="flex overflow-x-auto hide-scrollbar px-margin-mobile gap-gutter-mobile">
+          {loadingStats ? (
+            <StatRailSkeleton count={3} />
+          ) : (
+            <>
+              <StatCard label="Lots Registered" st="Loto tse ngolisitsoeng" value={lotsRegistered} />
+              <StatCard label="Total Weight" st="Boima kaofela" value={totalWeightKg} unit="kg" />
+              <Link
+                to="/farmer/market"
+                className="min-w-[240px] bg-primary text-on-primary p-stack-md rounded-xl shadow-sm shrink-0 active:scale-[0.98] transition-transform"
+              >
+                <span className="text-label-sm uppercase tracking-wide text-primary-fixed">
+                  Earnings / Melemo
+                </span>
+                <div className="flex flex-col mt-1">
+                  <span className="text-headline-sm font-bold">{formatCUSD(balance ?? 0n)} cUSD</span>
+                  <span className="text-headline-md font-bold">{cusdToLSL(balance ?? 0n)} LSL</span>
+                </div>
+                <div className="mt-2 flex items-center gap-1">
+                  <Icon name="account_balance_wallet" size={16} className="text-primary-fixed" />
+                  <span className="text-label-sm">
+                    {totalEarnedWei > 0n ? `${formatCUSD(totalEarnedWei)} earned` : "Pay-out Available"}
+                  </span>
+                </div>
+              </Link>
+            </>
+          )}
+        </div>
       </section>
 
       {pendingCount > 0 && (
-        <section className="px-4 mt-4">
+        <section className="px-margin-mobile mt-stack-lg">
           <Link
             to="/farmer/lots"
-            className="bg-tertiary-fixed text-on-tertiary-fixed-variant p-4 rounded-xl flex items-center gap-3 border border-tertiary-container"
+            className="bg-tertiary-fixed text-on-tertiary-fixed-variant p-4 rounded-xl flex items-center gap-3 border border-tertiary-container active:scale-[0.99] transition-transform"
           >
             <span className="bg-tertiary-container text-on-tertiary-container rounded-full p-2 flex items-center justify-center shrink-0">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-                <path d="M12 9v4M12 17h.01" strokeLinecap="round" />
-                <circle cx="12" cy="12" r="9" />
-              </svg>
+              <Icon name="priority_high" />
             </span>
             <div className="flex-1">
               <p className="font-bold text-body-md">
@@ -90,66 +114,63 @@ export default function FarmerDashboard() {
               </p>
               <p className="text-label-sm">Loto tse {pendingCount} li letetse ho netefatsoa</p>
             </div>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 shrink-0">
-              <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <Icon name="chevron_right" />
           </Link>
         </section>
       )}
 
-      {/* Validated Lot Notifications */}
       {validatedLotsNotified.length > 0 && (
-        <section className="px-4 mt-4 space-y-3">
+        <section className="px-margin-mobile mt-stack-md space-y-3">
           {validatedLotsNotified.map((lot) => (
-            <div
+            <Card
               key={lot.lotId.toString()}
-              className="bg-primary-container text-on-primary-container p-4 rounded-xl flex items-start gap-3 border border-primary/20 shadow-sm"
+              role="farmer"
+              className="bg-primary-container text-on-primary-container border-primary/20"
             >
-              <span className="bg-primary text-on-primary rounded-full p-2 flex items-center justify-center shrink-0">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </span>
-              <div className="flex-1">
-                <p className="font-bold text-body-md">
-                  Lot #{lot.lotId.toString()} has been validated!
-                </p>
-                <p className="text-label-sm">Loto #{lot.lotId.toString()} e netefalitsoe!</p>
-                <div className="flex gap-4 mt-2">
-                  <Link
-                    to={`/farmer/lots/${lot.lotId}/qr`}
-                    className="text-label-sm font-bold text-primary underline"
-                  >
-                    View QR Proof / Sheba QR
-                  </Link>
-                  <button
-                    onClick={() => handleDismissNotification(lot.lotId)}
-                    className="text-label-sm font-bold text-on-surface-variant/80 hover:text-on-surface"
-                  >
-                    Dismiss / Hlakola
-                  </button>
+              <div className="flex items-start gap-3">
+                <span className="bg-primary text-on-primary rounded-full p-2 flex items-center justify-center shrink-0">
+                  <Icon name="check_circle" filled />
+                </span>
+                <div className="flex-1">
+                  <p className="font-bold text-body-md">Lot #{lot.lotId.toString()} has been validated!</p>
+                  <p className="text-label-sm">Loto #{lot.lotId.toString()} e netefalitsoe!</p>
+                  <div className="flex gap-4 mt-2">
+                    <Link
+                      to={`/farmer/lots/${lot.lotId}/qr`}
+                      className="text-label-sm font-bold text-primary underline"
+                    >
+                      View QR Proof / Sheba QR
+                    </Link>
+                    <button
+                      onClick={() => handleDismissNotification(lot.lotId)}
+                      className="text-label-sm font-bold text-on-surface-variant/80 hover:text-on-surface"
+                    >
+                      Dismiss / Hlakola
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </section>
       )}
 
-      <section className="px-4 mt-6">
-        <h2 className="text-label-lg text-on-surface-variant uppercase tracking-widest mb-2">
-          Quick Actions / Liketso tse Potlakileng
+      <section className="px-margin-mobile mt-stack-lg">
+        <h2 className="text-label-lg text-on-surface-variant uppercase tracking-widest mb-stack-sm">
+          <BilingualText en="Quick Actions" st="Liketso tse Potlakileng" size="label-lg" />
         </h2>
         <div className="grid grid-cols-2 gap-4">
           <QuickAction to="/farmer/register" icon="register" title="Register Lot" st="Ngolisa Loto" />
           <QuickAction to="/farmer/lots" icon="lots" title="My Lots" st="Loto tsa ka" />
-          <QuickAction to="/farmer/lots" icon="qr" title="QR Proof" st="Bopaki ba QR" />
+          <QuickAction to={qrTarget} icon="qr" title="QR Proof" st="Bopaki ba QR" />
           <QuickAction to="/farmer/market" icon="market" title="Market" st="Mmaraka" />
         </div>
       </section>
 
-      <section className="mt-6">
-        <div className="flex justify-between items-center px-4 mb-2">
+      <IndustryMarksRail farmerAddress={address} />
+
+      <section className="px-margin-mobile mt-stack-lg pb-4">
+        <div className="flex justify-between items-center mb-stack-sm">
           <h2 className="text-label-lg text-on-surface-variant uppercase tracking-widest">
             Recent Activity
           </h2>
@@ -157,36 +178,37 @@ export default function FarmerDashboard() {
             View All
           </Link>
         </div>
-        <div className="px-4 space-y-3">
-          {isLoading && <p className="text-body-sm text-on-surface-variant">Loading lots…</p>}
+        <div className="space-y-3">
+          {isLoading && (
+            <>
+              <LotCardSkeleton />
+              <LotCardSkeleton />
+            </>
+          )}
           {!isLoading && recentLots.length === 0 && (
             <p className="text-body-sm text-on-surface-variant">
               No lots registered yet. Tap "Register Lot" to get started.
             </p>
           )}
           {recentLots.map((lot) => (
-            <Link
-              key={lot.lotId.toString()}
-              to={`/farmer/lots/${lot.lotId}`}
-              className="bg-surface-container-lowest border border-outline-variant p-4 rounded-xl flex justify-between items-center shadow-sm"
-            >
-              <div className="flex items-center gap-3">
-                <div className="bg-surface-container p-2 rounded-lg">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 text-primary">
-                    <path d="M4 7h16M4 12h16M4 17h10" strokeLinecap="round" />
-                  </svg>
+            <Link key={lot.lotId.toString()} to={`/farmer/lots/${lot.lotId}`}>
+              <Card role="farmer" className="flex justify-between items-center active:scale-[0.99] transition-transform">
+                <div className="flex items-center gap-3">
+                  <div className="bg-surface-container p-2 rounded-lg text-primary">
+                    <Icon name="inventory_2" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-on-surface">Lot #{lot.lotId.toString()}</p>
+                    <p className="text-body-sm text-on-surface-variant">
+                      {FibreTypeLabel[lot.fibreType]} · {gramsToKg(lot.weightGrams)}kg
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-bold text-on-surface">Lot #{lot.lotId.toString()}</p>
-                  <p className="text-body-sm text-on-surface-variant">
-                    {FibreTypeLabel[lot.fibreType]} · {gramsToKg(lot.weightGrams)}kg
-                  </p>
+                <div className="text-right">
+                  <StatusChip status={LotStatusLabel[lot.status]} />
+                  <p className="text-[10px] text-on-surface-variant mt-1">{timeAgo(lot.registeredAt)}</p>
                 </div>
-              </div>
-              <div className="text-right">
-                <StatusChip status={LotStatusLabel[lot.status]} />
-                <p className="text-[10px] text-on-surface-variant mt-1">{timeAgo(lot.registeredAt)}</p>
-              </div>
+              </Card>
             </Link>
           ))}
         </div>
@@ -194,69 +216,11 @@ export default function FarmerDashboard() {
 
       <Link
         to="/farmer/register"
-        className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center"
+        className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center active:scale-90 transition-transform"
         aria-label="Register new lot"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-7 w-7">
-          <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-        </svg>
+        <Icon name="add" size={28} />
       </Link>
     </AppLayout>
-  );
-}
-
-function StatCard({ label, st, value, unit }) {
-  return (
-    <div className="min-w-[150px] bg-surface-container-lowest border border-outline-variant p-4 rounded-xl shadow-sm shrink-0">
-      <span className="text-label-sm text-on-surface-variant uppercase tracking-wider">{label}</span>
-      <div className="text-headline-md font-bold text-on-surface mt-1">
-        {value} {unit && <span className="text-body-sm">{unit}</span>}
-      </div>
-      {st && <div className="text-label-sm text-primary mt-1">{st}</div>}
-    </div>
-  );
-}
-
-const QUICK_ICONS = {
-  register: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-8 w-8">
-      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z" strokeLinejoin="round" />
-      <path d="M14 3v6h6M9 13h6M9 17h4" strokeLinecap="round" />
-    </svg>
-  ),
-  lots: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-8 w-8">
-      <rect x="4" y="7" width="16" height="13" rx="1.5" />
-      <path d="M4 11h16M9 4h6l1.5 3h-9z" strokeLinejoin="round" />
-    </svg>
-  ),
-  qr: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-8 w-8">
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <path d="M14 14h3v3h-3zM18 18h3v3h-3z" />
-    </svg>
-  ),
-  market: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-8 w-8">
-      <path d="M3 17 9 9l4 4 8-8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M16 5h5v5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-};
-
-function QuickAction({ to, icon, title, st }) {
-  return (
-    <Link
-      to={to}
-      className="flex flex-col items-start p-4 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm active:scale-95 transition-transform h-24 justify-between"
-    >
-      <span className="text-primary">{QUICK_ICONS[icon]}</span>
-      <div className="text-left">
-        <p className="font-bold text-on-surface text-body-sm">{title}</p>
-        <p className="text-[10px] text-on-surface-variant uppercase">{st}</p>
-      </div>
-    </Link>
   );
 }

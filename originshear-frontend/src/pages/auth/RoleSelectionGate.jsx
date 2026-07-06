@@ -1,16 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useRole, Role } from "../../context/RoleContext";
+import { DEV_BYPASS_ROLE_GUARDS } from "../../lib/devBypass";
+import TopAppBar from "../../components/nav/TopAppBar";
+import Icon from "../../components/ui/Icon";
 
 const CARDS = [
   {
     key: "farmer",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-7 w-7">
-        <path d="M5 16h14M7 16V8l5-3 5 3v8" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="12" cy="11" r="2" />
-      </svg>
-    ),
+    icon: "agriculture",
     border: "border-l-role-farmer",
     iconBg: "bg-role-farmer/10 text-role-farmer",
     title: "Farmer",
@@ -21,12 +19,7 @@ const CARDS = [
   },
   {
     key: "validator",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-7 w-7">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" strokeLinejoin="round" />
-        <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
+    icon: "verified_user",
     border: "border-l-role-validator",
     iconBg: "bg-role-validator/10 text-role-validator",
     title: "LNWMGA Validator",
@@ -37,11 +30,7 @@ const CARDS = [
   },
   {
     key: "government",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-7 w-7">
-        <path d="M4 10h16M6 10v9M18 10v9M3 19h18M12 3l8 4H4l8-4Z" strokeLinejoin="round" strokeLinecap="round" />
-      </svg>
-    ),
+    icon: "account_balance",
     border: "border-l-role-government",
     iconBg: "bg-role-government/10 text-role-government",
     title: "Government",
@@ -52,13 +41,7 @@ const CARDS = [
   },
   {
     key: "buyer",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-7 w-7">
-        <circle cx="9" cy="21" r="1" />
-        <circle cx="19" cy="21" r="1" />
-        <path d="M2 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L21 7H6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
+    icon: "shopping_cart",
     border: "border-l-role-buyer",
     iconBg: "bg-role-buyer/10 text-role-buyer",
     title: "Buyer / Verifier",
@@ -75,11 +58,7 @@ export default function RoleSelectionGate() {
   const { roles, isLoadingRoles, hasContracts } = useRole();
 
   function handleSelect(card) {
-    if (card.role === null) {
-      navigate(card.path);
-      return;
-    }
-    if (card.role === Role.BUYER) {
+    if (DEV_BYPASS_ROLE_GUARDS || card.role === null || card.role === Role.BUYER) {
       navigate(card.path);
       return;
     }
@@ -87,7 +66,7 @@ export default function RoleSelectionGate() {
       navigate("/connect", { state: { intendedRole: card.role } });
       return;
     }
-    if (isLoadingRoles) return; // wait for role check to settle
+    if (isLoadingRoles) return;
     if (!hasContracts) {
       navigate("/error/wrong-network");
       return;
@@ -100,8 +79,9 @@ export default function RoleSelectionGate() {
   }
 
   return (
-    <div className="min-h-dvh bg-gradient-to-b from-surface-container to-surface px-6 py-10">
-      <div className="max-w-md mx-auto">
+    <div className="min-h-dvh bg-[#F5F4F0]">
+      <TopAppBar role="AUTH" />
+      <div className="px-margin-mobile py-10 pt-20 max-w-md mx-auto">
         <h1 className="text-headline-lg font-extrabold text-role-validator text-center mb-1">
           ORIGINSHEAR
         </h1>
@@ -109,7 +89,7 @@ export default function RoleSelectionGate() {
           Who are you signing in as?
         </p>
 
-        <div className="space-y-4">
+        <div className="space-y-stack-md">
           {CARDS.map((card) => (
             <button
               key={card.key}
@@ -117,15 +97,13 @@ export default function RoleSelectionGate() {
               className={`w-full text-left bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant border-l-4 ${card.border} p-5 active:scale-[0.99] transition-transform`}
             >
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${card.iconBg}`}>
-                {card.icon}
+                <Icon name={card.icon} />
               </div>
               <h2 className="text-headline-sm font-bold text-on-surface">{card.title}</h2>
               <p className="text-body-sm text-on-surface-variant mt-1 mb-3">{card.desc}</p>
               <span className="text-body-sm font-semibold text-primary inline-flex items-center gap-1">
                 Continue
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-                  <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <Icon name="arrow_forward" className="!text-base" />
               </span>
             </button>
           ))}

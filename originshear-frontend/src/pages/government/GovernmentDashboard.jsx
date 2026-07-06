@@ -5,10 +5,16 @@ import { useLotQueue } from "../../hooks/useLotQueue";
 import { useIndustryMarks } from "../../hooks/useIndustryMarks";
 import { useFarmerMarks } from "../../hooks/useFarmerMarks";
 import { LotStatus } from "../../contracts/HarvestLedger";
-import { MarkTypeLabel } from "../../contracts/IndustryMarkRegistry";
+import { MarkTypeLabel, MarkStatus, MarkStatusLabel } from "../../contracts/IndustryMarkRegistry";
 import { apiClient } from "../../lib/apiClient";
 import { shorten } from "../../lib/utils";
+import { Link } from "react-router-dom";
+import PageHeader from "../../components/ui/PageHeader";
 import BilingualText from "../../components/ui/BilingualText";
+import Button from "../../components/ui/Button";
+import Icon from "../../components/ui/Icon";
+import Card from "../../components/ui/Card";
+import { FormField, inputClassName, selectClassName } from "../../components/ui/FormField";
 
 /**
  * Government Mark Management Dashboard.
@@ -36,6 +42,8 @@ export default function GovernmentDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
+  const [revokingId, setRevokingId] = useState(null);
+  const [revokeError, setRevokeError] = useState("");
 
   useEffect(() => {
     if (isSuccess) {
@@ -87,19 +95,38 @@ export default function GovernmentDashboard() {
     }
   }
 
+  async function handleRevoke(markId) {
+    setRevokingId(markId.toString());
+    setRevokeError("");
+    try {
+      await apiClient.put(`/api/marks/${markId.toString()}/revoke`, {}, { auth: true });
+      refetchMarks();
+    } catch (err) {
+      setRevokeError(err?.message || "Failed to revoke mark");
+    } finally {
+      setRevokingId(null);
+    }
+  }
+
   const busy = isSubmitting;
 
   return (
     <AppLayout role="GOVERNMENT" title="ORIGINSHEAR">
-      <div className="px-4 pt-2 pb-8">
-        <h1 className="text-headline-md font-bold">
-          <BilingualText en="Mark Management Dashboard" st="Matšoao a Mmuso" size="headline-md" />
-        </h1>
-        <p className="text-body-sm text-on-surface-variant mb-4">
-          Admin Control Panel — Quthing District
-        </p>
+      <div className="px-margin-mobile pt-stack-lg pb-8 max-w-[1024px] mx-auto">
+        <PageHeader
+          en="Mark Management Dashboard"
+          st="Matšoao a Mmuso"
+          subtitle="Admin Control Panel — Quthing District"
+          action={
+            <Link to="/government/news/compose">
+              <Button fullWidth={false} size="sm" icon={<Icon name="campaign" className="!text-base" />}>
+                Publish News
+              </Button>
+            </Link>
+          }
+        />
 
-        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-5 mb-4">
+        <Card role="government" className="mb-stack-md">
           <p className="text-label-sm text-on-surface-variant uppercase">
             <BilingualText en="Total On-Chain Marks Issued" st="Matšoao Ohle a Kentseng" size="label-sm" />
           </p>
@@ -114,9 +141,9 @@ export default function GovernmentDashboard() {
               <Legend color="bg-role-government" label="Rejected" />
             </div>
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-5 mb-4">
+        <Card role="government" className="mb-stack-md">
           <div className="flex justify-between items-center mb-3">
             <h2 className="font-bold">Lot Status Overview</h2>
             <span className="bg-role-government/15 text-role-government rounded-full px-3 py-1 text-label-sm font-bold">
@@ -129,28 +156,25 @@ export default function GovernmentDashboard() {
             <StatBox value={pendingCount} label="Pending" color="text-role-validator" />
             <StatBox value={rejectedCount} label="Rejected" color="text-error" />
           </div>
-        </div>
+        </Card>
 
-        <form
-          onSubmit={handleIssue}
-          className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-5 mb-6"
-        >
+        <Card role="government" className="mb-stack-lg">
+          <form onSubmit={handleIssue} className="space-y-4">
           <h2 className="font-bold flex items-center gap-2 mb-4 text-primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-              <path d="M12 3 4 6.5V12c0 5 3.4 8 8 9 4.6-1 8-4 8-9V6.5z" strokeLinejoin="round" />
-            </svg>
+            <Icon name="verified" />
             <BilingualText en="Issue an Industry Mark" st="Fana ka Letšoao la Semmuso" size="body-lg" />
           </h2>
 
-          <label className="block text-body-sm font-semibold mb-1">Farmer Wallet Address (Aterese ea Wallet)</label>
-          <input
-            value={form.farmerWallet}
-            onChange={(e) => setForm({ ...form, farmerWallet: e.target.value })}
-            placeholder="0x…"
-            required
-            disabled={busy}
-            className="w-full h-12 rounded-lg border border-outline-variant bg-surface-container px-4 mb-2 text-body-sm focus:border-primary focus:border-2 outline-none font-mono"
-          />
+          <FormField label="Farmer Wallet Address (Aterese ea Wallet)">
+            <input
+              value={form.farmerWallet}
+              onChange={(e) => setForm({ ...form, farmerWallet: e.target.value })}
+              placeholder="0x…"
+              required
+              disabled={busy}
+              className={`${inputClassName} font-mono mb-2`}
+            />
+          </FormField>
           {farmerWalletValid && (
             <div className="mb-4 bg-surface-container rounded-lg p-3">
               <p className="text-label-sm text-on-surface-variant uppercase mb-2">
@@ -175,46 +199,50 @@ export default function GovernmentDashboard() {
             <p className="text-label-sm text-error mb-4">Enter a valid wallet address (0x…)</p>
           )}
 
-          <label className="block text-body-sm font-semibold mb-1">Farmer ID (Nomoro ea Molemi)</label>
-          <input
-            value={form.farmerId}
-            onChange={(e) => setForm({ ...form, farmerId: e.target.value })}
-            placeholder="e.g. LSO-12345"
-            required
-            disabled={busy}
-            className="w-full h-12 rounded-lg border border-outline-variant bg-surface-container px-4 mb-4 text-body-sm focus:border-primary focus:border-2 outline-none"
-          />
+          <FormField label="Farmer ID (Nomoro ea Molemi)">
+            <input
+              value={form.farmerId}
+              onChange={(e) => setForm({ ...form, farmerId: e.target.value })}
+              placeholder="e.g. LSO-12345"
+              required
+              disabled={busy}
+              className={inputClassName}
+            />
+          </FormField>
 
-          <label className="block text-body-sm font-semibold mb-1">Mark Type (Mofuta oa Letšoao)</label>
-          <select
-            value={form.markTypeIndex}
-            onChange={(e) => setForm({ ...form, markTypeIndex: Number(e.target.value) })}
-            disabled={busy}
-            className="w-full h-12 rounded-lg border border-outline-variant bg-surface-container px-4 mb-4 text-body-sm focus:border-primary focus:border-2 outline-none appearance-none font-semibold"
-          >
-            <option value={0}>{MarkTypeLabel[0]}</option>
-            <option value={1}>{MarkTypeLabel[1]}</option>
-            <option value={2}>{MarkTypeLabel[2]}</option>
-          </select>
+          <FormField label="Mark Type (Mofuta oa Letšoao)">
+            <select
+              value={form.markTypeIndex}
+              onChange={(e) => setForm({ ...form, markTypeIndex: Number(e.target.value) })}
+              disabled={busy}
+              className={selectClassName}
+            >
+              <option value={0}>{MarkTypeLabel[0]}</option>
+              <option value={1}>{MarkTypeLabel[1]}</option>
+              <option value={2}>{MarkTypeLabel[2]}</option>
+            </select>
+          </FormField>
 
-          <label className="block text-body-sm font-semibold mb-1">Description / Location Description</label>
-          <input
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            placeholder="e.g. Left ear visual tag, green standard"
-            disabled={busy}
-            className="w-full h-12 rounded-lg border border-outline-variant bg-surface-container px-4 mb-4 text-body-sm focus:border-primary focus:border-2 outline-none"
-          />
+          <FormField label="Description / Location Description">
+            <input
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="e.g. Left ear visual tag, green standard"
+              disabled={busy}
+              className={inputClassName}
+            />
+          </FormField>
 
-          <label className="block text-body-sm font-semibold mb-1">Expiry Date (Letsatsi la ho Fela)</label>
-          <input
-            type="date"
-            value={form.expiryDate}
-            onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
-            required
-            disabled={busy}
-            className="w-full h-12 rounded-lg border border-outline-variant bg-surface-container px-4 mb-5 text-body-sm focus:border-primary focus:border-2 outline-none"
-          />
+          <FormField label="Expiry Date (Letsatsi la ho Fela)">
+            <input
+              type="date"
+              value={form.expiryDate}
+              onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
+              required
+              disabled={busy}
+              className={inputClassName}
+            />
+          </FormField>
 
           {submitError && (
             <p className="text-body-sm text-error mb-4">
@@ -222,22 +250,11 @@ export default function GovernmentDashboard() {
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={busy || !form.farmerWallet || !form.farmerId || !form.expiryDate}
-            className="w-full h-14 rounded-lg bg-primary text-on-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
-          >
-            {busy ? (
-              <span className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-                <circle cx="12" cy="12" r="9" />
-                <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
+          <Button type="submit" size="lg" disabled={busy || !form.farmerWallet || !form.farmerId || !form.expiryDate} loading={busy} icon={<Icon name="check_circle" />}>
             {isSubmitting ? "Submitting..." : "Issue Mark (Etsa Letšoao)"}
-          </button>
-        </form>
+          </Button>
+          </form>
+        </Card>
 
         <h2 className="text-label-lg text-primary uppercase tracking-widest mb-3">
           On-Chain Issued Marks (Matšoao a Tsoileng)
@@ -246,16 +263,25 @@ export default function GovernmentDashboard() {
         {!isLoadingMarks && onChainMarks.length === 0 && (
           <p className="text-body-sm text-on-surface-variant font-medium">No marks registered on-chain yet.</p>
         )}
-        <div className="space-y-3">
+        {revokeError && <p className="text-body-sm text-error mb-3">{revokeError}</p>}
+        <div className="space-y-stack-md">
           {onChainMarks.map((m) => (
-            <div key={m.markId.toString()} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm">
+            <Card key={m.markId.toString()} role="government">
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <p className="text-label-sm text-on-surface-variant uppercase font-mono">Mark ID #{m.markId.toString()}</p>
                   <p className="font-bold text-body-md text-on-surface">{MarkTypeLabel[m.markType]}</p>
                 </div>
-                <span className="bg-primary/10 text-primary rounded-full px-2.5 py-0.5 text-[10px] font-bold">
-                  Active
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                    m.status === MarkStatus.ACTIVE
+                      ? "bg-primary/10 text-primary"
+                      : m.status === MarkStatus.REVOKED
+                        ? "bg-error-container text-error"
+                        : "bg-surface-container text-on-surface-variant"
+                  }`}
+                >
+                  {MarkStatusLabel[m.status] || "Unknown"}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-body-sm text-on-surface-variant">
@@ -275,7 +301,12 @@ export default function GovernmentDashboard() {
                   <span>Issued By: {shorten(m.issuedBy)} · Expires: {new Date(Number(m.expiresAt) * 1000).toLocaleDateString()}</span>
                 </div>
               </div>
-            </div>
+              {m.status === MarkStatus.ACTIVE && (
+                <Button variant="outline-error" size="sm" onClick={() => handleRevoke(m.markId)} disabled={revokingId === m.markId.toString()} loading={revokingId === m.markId.toString()} className="mt-3">
+                  Revoke Mark
+                </Button>
+              )}
+            </Card>
           ))}
         </div>
       </div>

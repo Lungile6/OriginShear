@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import TopAppBar from "../../components/nav/TopAppBar";
 
 const STEPS = [
   "Open your wallet app (Valora or MetaMask).",
@@ -11,8 +12,10 @@ const STEPS = [
 export default function NetworkHelp() {
   const navigate = useNavigate();
   return (
-    <div className="min-h-dvh bg-background px-6 py-8">
-      <button onClick={() => navigate(-1)} className="text-on-surface-variant mb-6 flex items-center gap-1 text-body-sm">
+    <div className="min-h-dvh bg-background">
+      <TopAppBar role="AUTH" />
+      <div className="px-6 py-8 pt-20">
+        <button onClick={() => navigate(-1)} className="text-on-surface-variant mb-6 flex items-center gap-1 text-body-sm">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
           <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -29,6 +32,7 @@ export default function NetworkHelp() {
           </li>
         ))}
       </ol>
+      </div>
     </div>
   );
 }

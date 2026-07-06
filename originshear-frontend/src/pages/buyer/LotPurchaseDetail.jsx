@@ -15,6 +15,10 @@ import { FARMER_MARKET_ABI, OfferStatus, OfferStatusLabel, ERC20_ABI } from "../
 import { getContractAddresses } from "../../contracts/addresses";
 import { formatCUSD, cusdToLSL, gramsToKg, shorten } from "../../lib/utils";
 import BilingualText from "../../components/ui/BilingualText";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import Icon from "../../components/ui/Icon";
+import { LotCardSkeleton } from "../../components/ui/Skeleton";
 
 export default function LotPurchaseDetail() {
   const { lotId } = useParams();
@@ -150,7 +154,9 @@ export default function LotPurchaseDetail() {
   if (loadingLot) {
     return (
       <AppLayout role="BUYER" title="ORIGINSHEAR">
-        <p className="px-4 py-6 text-body-sm text-on-surface-variant">Loading lot…</p>
+        <div className="px-margin-mobile pt-stack-lg">
+          <LotCardSkeleton />
+        </div>
       </AppLayout>
     );
   }
@@ -182,12 +188,13 @@ export default function LotPurchaseDetail() {
 
   return (
     <AppLayout role="BUYER" title="ORIGINSHEAR">
-      <div className="px-4 pt-2 pb-8">
-        <Link to="/buyer/marketplace" className="text-primary text-label-sm font-bold mb-3 inline-block">
-          ← Back to Marketplace
+      <div className="px-margin-mobile pt-stack-lg pb-8 max-w-[1024px] mx-auto">
+        <Link to="/buyer/marketplace" className="text-primary text-label-sm font-bold mb-3 inline-flex items-center gap-1">
+          <Icon name="arrow_back" className="!text-base" />
+          Back to Marketplace
         </Link>
 
-        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-4 mb-4">
+        <Card role="buyer" className="mb-stack-md">
           <p className="text-label-sm text-on-surface-variant uppercase">Lot #{lotId}</p>
           <p className="font-bold text-headline-sm mb-2">
             {FibreTypeLabel[lot.fibreType]} · Grade {GradeLabel[lot.grade]} · {gramsToKg(lot.weightGrams)} kg
@@ -206,9 +213,9 @@ export default function LotPurchaseDetail() {
               </span>
             </div>
           )}
-        </div>
+        </Card>
 
-        <section className="mb-6">
+        <section className="mb-stack-lg">
           <div className="flex items-center justify-between mb-3 gap-3">
             <h2 className="text-label-lg text-on-surface-variant uppercase tracking-widest">
               <BilingualText en="Origin Verification" st="Netefatso ea Tšimo" size="label-lg" />
@@ -223,8 +230,9 @@ export default function LotPurchaseDetail() {
         </section>
 
         {offerData && (
-          <section className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-5">
-            <h2 className="font-bold mb-3">
+          <Card role="buyer">
+            <h2 className="font-bold mb-3 flex items-center gap-2">
+              <Icon name="shopping_cart" className="text-primary" />
               <BilingualText en="Purchase" st="Reka" size="body-lg" />
             </h2>
 
@@ -244,14 +252,16 @@ export default function LotPurchaseDetail() {
                     Connect wallet to purchase this selected lot.
                   </p>
                 )}
-                <button
+                <Button
                   onClick={handlePurchase}
                   disabled={
                     busy ||
                     !canPurchase ||
                     BigInt(balance ?? 0n) < BigInt(offerData.askPriceWei ?? 0n)
                   }
-                  className="w-full h-14 rounded-lg bg-primary text-on-primary font-semibold disabled:opacity-60"
+                  loading={busy}
+                  size="lg"
+                  icon={<Icon name="payments" />}
                 >
                   {busy
                     ? purchaseStep === "approve"
@@ -259,10 +269,10 @@ export default function LotPurchaseDetail() {
                       : "Confirming purchase…"
                     : !canPurchase
                       ? "Connect Wallet to Buy"
-                    : needsApproval
-                      ? `Approve & Buy · ${formatCUSD(offerData.askPriceWei)} cUSD`
-                      : `Buy Lot · ${formatCUSD(offerData.askPriceWei)} cUSD`}
-                </button>
+                      : needsApproval
+                        ? `Approve & Buy · ${formatCUSD(offerData.askPriceWei)} cUSD`
+                        : `Buy Lot · ${formatCUSD(offerData.askPriceWei)} cUSD`}
+                </Button>
                 {!canPurchase && (
                   <Link to="/connect" className="text-primary text-label-sm font-bold mt-2 inline-block">
                     Go to Connect
@@ -277,11 +287,14 @@ export default function LotPurchaseDetail() {
             )}
 
             {isEscrow && (
-              <div className="bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-lg p-4">
-                <p className="font-bold">Payment in Escrow</p>
-                <p className="text-body-sm mt-1">
-                  {formatCUSD(offerData.escrowAmount)} cUSD held until LNWMGA confirms fibre handover.
-                </p>
+              <div className="bg-tertiary-fixed text-on-tertiary-fixed rounded-lg p-4 flex gap-3">
+                <Icon name="lock_clock" />
+                <div>
+                  <p className="font-bold">Payment in Escrow</p>
+                  <p className="text-body-sm mt-1">
+                    {formatCUSD(offerData.escrowAmount)} cUSD held until LNWMGA confirms fibre handover.
+                  </p>
+                </div>
               </div>
             )}
 
@@ -304,7 +317,7 @@ export default function LotPurchaseDetail() {
                 {writeError.shortMessage || writeError.message}
               </p>
             )}
-          </section>
+          </Card>
         )}
 
         {!offerData && (

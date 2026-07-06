@@ -3,6 +3,10 @@ import { useLotQueue } from "../../hooks/useLotQueue";
 import { LotStatus, LotStatusLabel, FibreTypeLabel } from "../../contracts/HarvestLedger";
 import { gramsToKg, shorten, timeAgo } from "../../lib/utils";
 import StatusChip from "../../components/ui/StatusChip";
+import PageHeader from "../../components/ui/PageHeader";
+import Card from "../../components/ui/Card";
+import Icon from "../../components/ui/Icon";
+import { LotCardSkeleton } from "../../components/ui/Skeleton";
 
 export default function ValidatorAuditLog() {
   const { allLots, isLoading } = useLotQueue();
@@ -13,34 +17,41 @@ export default function ValidatorAuditLog() {
 
   return (
     <AppLayout role="VALIDATOR" title="ORIGINSHEAR">
-      <div className="px-4 pt-2 pb-6">
-        <h1 className="text-headline-md font-bold">Audit Log</h1>
-        <p className="text-body-sm text-on-surface-variant mb-4">
-          Completed validator decisions and lot outcomes.
-        </p>
+      <div className="px-margin-mobile pt-stack-lg pb-8 max-w-[1024px] mx-auto">
+        <PageHeader
+          title="Audit Log"
+          subtitle="Completed validator decisions and lot outcomes."
+        />
 
-        {isLoading && <p className="text-body-sm text-on-surface-variant">Loading audit log…</p>}
+        {isLoading && (
+          <div className="space-y-stack-md">
+            <LotCardSkeleton />
+            <LotCardSkeleton />
+          </div>
+        )}
         {!isLoading && decided.length === 0 && (
           <p className="text-body-sm text-on-surface-variant">No validation decisions recorded yet.</p>
         )}
 
-        <div className="space-y-3">
+        <div className="space-y-stack-md">
           {decided.map((lot) => (
-            <div
-              key={lot.lotId.toString()}
-              className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-4 flex justify-between items-center"
-            >
-              <div>
-                <p className="font-bold">Lot #{lot.lotId.toString()}</p>
-                <p className="text-body-sm text-on-surface-variant">
-                  {FibreTypeLabel[lot.fibreType]} · {gramsToKg(lot.weightGrams)}kg · {shorten(lot.farmer)}
-                </p>
-                <p className="text-[10px] text-on-surface-variant mt-0.5">
-                  Validated by {shorten(lot.validatedBy)} · {timeAgo(lot.validatedAt)}
-                </p>
+            <Card key={lot.lotId.toString()} role="validator" className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="bg-surface-container p-2 rounded-lg text-role-validator">
+                  <Icon name="history" />
+                </div>
+                <div>
+                  <p className="font-bold text-on-surface">Lot #{lot.lotId.toString()}</p>
+                  <p className="text-body-sm text-on-surface-variant">
+                    {FibreTypeLabel[lot.fibreType]} · {gramsToKg(lot.weightGrams)}kg · {shorten(lot.farmer)}
+                  </p>
+                  <p className="text-[10px] text-on-surface-variant mt-0.5">
+                    By {shorten(lot.validatedBy)} · {timeAgo(lot.validatedAt)}
+                  </p>
+                </div>
               </div>
               <StatusChip status={LotStatusLabel[lot.status]} />
-            </div>
+            </Card>
           ))}
         </div>
       </div>

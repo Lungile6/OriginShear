@@ -1,20 +1,27 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import AppLayout from "../../layouts/AppLayout";
 import { useFarmerLots } from "../../hooks/useFarmerLots";
 import { LotStatus, LotStatusLabel, FibreType, FibreTypeLabel, GradeLabel } from "../../contracts/HarvestLedger";
 import { gramsToKg, shorten } from "../../lib/utils";
+import { SUPPORT } from "../../lib/support";
 import { toGatewayUrl } from "../../lib/ipfs";
 import StatusChip from "../../components/ui/StatusChip";
+import Icon from "../../components/ui/Icon";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import { LotCardSkeleton } from "../../components/ui/Skeleton";
 
 const TYPE_FILTERS = [
   { key: "all", label: "All Types" },
   { key: FibreType.WOOL, label: "Wool (Boyea)" },
-  { key: FibreType.MOHAIR, label: "Mohair (Boya ba Poli)" },
+  { key: FibreType.MOHAIR, label: "Mohair (Mohlaba)" },
+  { key: "pending", label: "Pending" },
 ];
 
 export default function MyLotsHistory() {
+  const navigate = useNavigate();
   const { address } = useAccount();
   const { lots, isLoading } = useFarmerLots(address);
   const [search, setSearch] = useState("");
@@ -22,7 +29,8 @@ export default function MyLotsHistory() {
 
   const filtered = useMemo(() => {
     return lots.filter((lot) => {
-      if (typeFilter !== "all" && lot.fibreType !== typeFilter) return false;
+      if (typeFilter === "pending" && lot.status !== LotStatus.PENDING) return false;
+      if (typeFilter !== "all" && typeFilter !== "pending" && lot.fibreType !== typeFilter) return false;
       if (search) {
         const q = search.toLowerCase();
         const matchesId = lot.lotId.toString().includes(q);
@@ -35,60 +43,67 @@ export default function MyLotsHistory() {
 
   return (
     <AppLayout role="FARMER" title="ORIGINSHEAR">
-      <div className="px-4 pt-2 pb-6">
-        <h1 className="text-headline-md font-bold">My Lots (Loto)</h1>
-        <p className="text-body-sm text-on-surface-variant mb-4">
-          View and manage your registered fibre transactions.
-        </p>
-
-        <div className="relative mb-3">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant"
-          >
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-3.5-3.5" strokeLinecap="round" />
-          </svg>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search Lot ID or Location…"
-            className="w-full h-12 rounded-lg border border-outline-variant bg-surface-container-lowest pl-10 pr-4 text-body-md focus:border-primary focus:border-2 outline-none"
-          />
+      <div className="px-margin-mobile pt-stack-lg pb-6 max-w-[1024px] mx-auto">
+        <div className="mb-stack-lg">
+          <h1 className="text-headline-md font-bold text-on-surface">My Lots (Loto)</h1>
+          <p className="text-body-sm text-on-surface-variant">
+            View and manage your registered fibre transactions.
+          </p>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar mb-4">
-          {TYPE_FILTERS.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setTypeFilter(f.key)}
-              className={`shrink-0 h-9 px-4 rounded-full text-label-sm font-semibold border flex items-center gap-1.5 ${
-                typeFilter === f.key
-                  ? "bg-primary text-on-primary border-primary"
-                  : "border-outline-variant text-on-surface-variant"
-              }`}
-            >
-              {f.key === "all" && (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-                  <path d="M4 5h16M7 12h10M10 19h4" strokeLinecap="round" />
-                </svg>
-              )}
-              {f.label}
-            </button>
-          ))}
+        <div className="flex flex-col gap-stack-sm mb-stack-lg">
+          <div className="relative w-full">
+            <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search Lot ID or Location..."
+              className="w-full pl-12 pr-4 h-touch-target-min bg-surface-container-lowest border border-outline-variant rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none text-body-md"
+            />
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto hide-scrollbar py-2">
+            {TYPE_FILTERS.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setTypeFilter(f.key)}
+                className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap text-label-lg border transition-colors ${
+                  typeFilter === f.key
+                    ? "bg-primary-container text-on-primary-container border-outline-variant"
+                    : "border-outline-variant text-on-surface-variant hover:bg-surface-container"
+                }`}
+              >
+                {f.key === "all" && <Icon name="filter_list" size={18} />}
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {isLoading && <p className="text-body-sm text-on-surface-variant">Loading lots…</p>}
-        {!isLoading && filtered.length === 0 && (
-          <p className="text-body-sm text-on-surface-variant">No lots match your filters.</p>
+        {isLoading && (
+          <div className="space-y-4">
+            <LotCardSkeleton />
+            <LotCardSkeleton />
+          </div>
         )}
 
-        <div className="space-y-4">
+        {!isLoading && filtered.length === 0 && (
+          <div className="flex flex-col items-center text-center py-12 px-4">
+            <Icon name="inventory_2" size={48} className="text-on-surface-variant mb-4" />
+            <h3 className="text-headline-md font-bold text-on-surface">No Lots Registered Yet</h3>
+            <p className="text-body-md text-on-surface-variant max-w-xs mt-2">
+              Start by registering your first wool or mohair harvest to see it on the ledger.
+            </p>
+            <Button fullWidth={false} className="mt-8 px-8" onClick={() => navigate("/farmer/register")}>
+              Register New Lot (Ngolisa)
+            </Button>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-stack-md">
           {filtered.map((lot) => (
-            <LotCard key={lot.lotId.toString()} lot={lot} />
+            <LotCard key={lot.lotId.toString()} lot={lot} onQr={() => navigate(`/farmer/lots/${lot.lotId}/qr`)} />
           ))}
         </div>
       </div>
@@ -96,27 +111,34 @@ export default function MyLotsHistory() {
   );
 }
 
-function LotCard({ lot }) {
+function LotCard({ lot, onQr }) {
   const status = lot.status;
+
   return (
-    <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-4">
+    <Card role="farmer" className="hover:border-primary transition-all">
       <div className="flex justify-between items-start mb-3">
         <div>
-          <p className="text-label-sm text-on-surface-variant uppercase">Lot ID</p>
-          <p className="font-bold text-headline-sm">#{lot.lotId.toString()}</p>
+          <span className="text-label-sm text-on-surface-variant uppercase tracking-wider">Lot ID</span>
+          <h3 className="text-headline-sm font-bold">#{lot.lotId.toString()}</h3>
         </div>
-        <StatusChip status={LotStatusLabel[status]} label={`${LotStatusLabel[status]}${status === LotStatus.VALIDATED ? " ✓" : status === LotStatus.REJECTED ? " ✗" : ""}`} />
+        <StatusChip
+          status={LotStatusLabel[status]}
+          label={`${LotStatusLabel[status]}${status === LotStatus.VALIDATED ? " ✓" : status === LotStatus.REJECTED ? " ✗" : ""}`}
+        />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-3">
+      <div className="space-y-3 mb-4">
         <Row label="Fibre / Grade" value={`${FibreTypeLabel[lot.fibreType]} Grade ${GradeLabel[lot.grade]}`} />
         <Row label="Weight (Boima)" value={`${gramsToKg(lot.weightGrams)}kg`} />
         <Row label="Origin (Sebaka)" value={lot.gpsZone} />
+        <div className="pt-2 border-t border-outline-variant">
+          <span className="text-[10px] font-mono text-on-surface-variant block truncate">
+            {status === LotStatus.PENDING
+              ? "Syncing with ledger..."
+              : `HASH: ${shorten(lot.proofOfOrigin, 6, 6)}`}
+          </span>
+        </div>
       </div>
-
-      <p className="text-[10px] text-on-surface-variant font-mono mb-3">
-        HASH: {shorten(lot.proofOfOrigin, 6, 6)}
-      </p>
 
       {lot.metadataURI && (
         <a
@@ -130,44 +152,32 @@ function LotCard({ lot }) {
       )}
 
       {status === LotStatus.VALIDATED && (
-        <Link
-          to={`/farmer/lots/${lot.lotId}/qr`}
-          className="w-full h-11 rounded-lg bg-primary text-on-primary font-semibold flex items-center justify-center gap-2"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-            <rect x="3" y="3" width="7" height="7" rx="1" />
-            <rect x="14" y="3" width="7" height="7" rx="1" />
-            <rect x="3" y="14" width="7" height="7" rx="1" />
-          </svg>
+        <Button onClick={onQr} icon={<Icon name="qr_code_2" />}>
           Generate QR
-        </Link>
+        </Button>
       )}
       {status === LotStatus.PENDING && (
-        <div className="w-full h-11 rounded-lg bg-surface-container text-on-surface-variant font-semibold flex items-center justify-center gap-2">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 7v5l3 3" strokeLinecap="round" />
-          </svg>
+        <div className="w-full h-touch-target-min bg-surface-container-highest text-on-surface-variant opacity-60 rounded-xl font-label-lg flex items-center justify-center gap-2 cursor-not-allowed">
+          <Icon name="pending" />
           Awaiting Validation
         </div>
       )}
       {status === LotStatus.REJECTED && (
-        <button className="w-full h-11 rounded-lg border border-error text-error font-semibold flex items-center justify-center gap-2">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-            <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M7 7l1 12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-12" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Appeal Rejection
-        </button>
+        <a href={`mailto:${SUPPORT.disputesEmail}?subject=${encodeURIComponent(`Appeal for Lot #${lot.lotId}`)}`}>
+          <Button variant="outline-error" icon={<Icon name="edit_note" />}>
+            Appeal Rejection
+          </Button>
+        </a>
       )}
-    </div>
+    </Card>
   );
 }
 
 function Row({ label, value }) {
   return (
-    <div>
-      <p className="text-label-sm text-on-surface-variant">{label}</p>
-      <p className="font-bold text-body-sm text-on-surface">{value}</p>
+    <div className="flex justify-between items-center text-body-sm">
+      <span className="text-on-surface-variant">{label}</span>
+      <span className="font-semibold">{value}</span>
     </div>
   );
 }

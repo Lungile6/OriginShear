@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount, useConnect, useSignMessage } from "wagmi";
 import { useNetworkGuard } from "../../hooks/useNetworkGuard";
-import { apiClient, setApiToken } from "../../lib/apiClient";
+import { authenticateApiSession } from "../../lib/apiAuth";
+import { apiClient } from "../../lib/apiClient";
+import TopAppBar from "../../components/nav/TopAppBar";
+import Button from "../../components/ui/Button";
+import Icon from "../../components/ui/Icon";
+import Card from "../../components/ui/Card";
 
 export default function WalletConnect() {
   const navigate = useNavigate();
@@ -31,37 +36,25 @@ export default function WalletConnect() {
         error: errorMessage,
       });
     } catch {
-      // Silent fail: connect flow should continue even if API is unavailable.
+      // Silent fail
     }
   }
 
-  async function authenticateApiSession(wallet) {
+  async function authenticateApiSessionForWallet(wallet) {
     try {
-      const challenge = await apiClient.post("/api/auth/challenge", { wallet });
-
-      const signature = await signMessageAsync({ message: challenge.message });
-
-      const loginPayload = await apiClient.post("/api/auth/login", {
-        wallet,
-        nonce: challenge.nonce,
-        signature,
-      });
-      if (loginPayload?.token) {
-        setApiToken(loginPayload.token);
-      }
-    } catch {
-      // Keep wallet UX resilient even if API auth is unavailable.
+      await authenticateApiSession(wallet, signMessageAsync);
+    } catch (err) {
+      setLocalError(
+        err?.message ||
+          "Wallet connected but API sign-in failed. You can retry from any protected screen."
+      );
     }
   }
 
   function handleConnect(connector) {
     setLocalError("");
-
     setConnectingId(connector.uid);
-    notifyWalletEvent({
-      event: "connect_clicked",
-      connectorName: connector.name,
-    });
+    notifyWalletEvent({ event: "connect_clicked", connectorName: connector.name });
     connect(
       { connector },
       {
@@ -86,7 +79,7 @@ export default function WalletConnect() {
             connectorName: connector.name,
             wallet: data?.accounts?.[0],
           });
-          authenticateApiSession(data?.accounts?.[0]).finally(() => {
+          authenticateApiSessionForWallet(data?.accounts?.[0]).finally(() => {
             navigate("/role-select", { replace: true });
           });
         },
@@ -94,7 +87,6 @@ export default function WalletConnect() {
     );
   }
 
-  // Prefer explicit wallets (MetaMask first, Valora second).
   const uniqueConnectors = connectors.filter(
     (c, i) => connectors.findIndex((x) => x.id === c.id && x.name === c.name) === i
   );
@@ -102,30 +94,19 @@ export default function WalletConnect() {
     (c) =>
       c.id === "metaMask" ||
       c.id === "metaMaskSDK" ||
+      c.id === "io.metamask" ||
       c.name.toLowerCase().includes("metamask")
   );
-  const valoraConnector = uniqueConnectors.find((c) =>
-    c.name.toLowerCase().includes("valora")
-  );
+  const valoraConnector = uniqueConnectors.find((c) => c.name.toLowerCase().includes("valora"));
 
   return (
     <div className="min-h-dvh flex flex-col bg-background">
-      <header className="flex items-center justify-between px-4 py-4 border-b border-outline-variant">
-        <span className="text-headline-sm font-bold text-primary uppercase">ORIGINSHEAR</span>
-        <button onClick={() => navigate(-1)} aria-label="Close" className="text-on-surface-variant">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-6 w-6">
-            <path d="M6 6l12 12M18 6 6 18" strokeLinecap="round" />
-          </svg>
-        </button>
-      </header>
+      <TopAppBar role="AUTH" />
 
-      <div className="flex-1 px-6 py-8 flex flex-col">
+      <div className="flex-1 px-margin-mobile py-8 pt-20 flex flex-col max-w-md mx-auto w-full">
         <div className="flex flex-col items-center text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-4">
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="h-8 w-8">
-              <rect x="3" y="6" width="18" height="13" rx="2" />
-              <path d="M3 10h18M16 14h2" strokeLinecap="round" />
-            </svg>
+            <Icon name="account_balance_wallet" className="text-on-primary !text-3xl" />
           </div>
           <h1 className="text-headline-md font-bold">Connect your wallet</h1>
           <p className="text-body-sm text-on-surface-variant">Kopanya sepache sa hau</p>
@@ -138,42 +119,29 @@ export default function WalletConnect() {
             </p>
           )}
           {metaMaskConnector && (
-            <button
+            <Button
               key={metaMaskConnector.uid}
               onClick={() => handleConnect(metaMaskConnector)}
               disabled={isPending}
-              className="w-full h-14 rounded-lg px-4 flex items-center justify-between font-semibold transition-transform active:scale-[0.98] disabled:opacity-60 bg-primary text-on-primary"
+              loading={connectingId === metaMaskConnector.uid && isPending}
+              icon={<Icon name="arrow_forward" />}
+              iconPosition="right"
             >
-              <span className="flex items-center gap-2">
-                {connectingId === metaMaskConnector.uid && isPending ? (
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                ) : null}
-                {isPending && connectingId === metaMaskConnector.uid
-                  ? "Connecting..."
-                  : "Connect Wallet"}
-              </span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-                <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
+              {isPending && connectingId === metaMaskConnector.uid ? "Connecting..." : "Connect Wallet"}
+            </Button>
           )}
           {valoraConnector && (
-            <button
+            <Button
               key={valoraConnector.uid}
+              variant="outline"
               onClick={() => handleConnect(valoraConnector)}
               disabled={isPending}
-              className="w-full h-12 rounded-lg px-4 flex items-center justify-between font-semibold transition-transform active:scale-[0.98] disabled:opacity-60 bg-surface-container-lowest border border-outline-variant text-on-surface"
+              loading={connectingId === valoraConnector.uid && isPending}
+              icon={<Icon name="arrow_forward" />}
+              iconPosition="right"
             >
-              <span className="flex items-center gap-2">
-                {connectingId === valoraConnector.uid && isPending ? (
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                ) : null}
-                Use Valora
-              </span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-                <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
+              Use Valora
+            </Button>
           )}
         </div>
 
@@ -188,17 +156,15 @@ export default function WalletConnect() {
           </p>
         )}
 
-        <div className="mt-6 rounded-lg bg-primary-container/30 border border-primary/20 p-4 flex gap-3">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 text-primary shrink-0 mt-0.5">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" strokeLinejoin="round" />
-          </svg>
+        <Card className="mt-6 bg-primary-container/30 border-primary/20 flex gap-3" padded>
+          <Icon name="shield" className="text-primary shrink-0 mt-0.5" />
           <div>
             <p className="text-body-sm text-on-surface">Your keys never leave your device.</p>
             <p className="text-label-sm italic text-primary mt-0.5">
               Tšireletso ea hau ke ntho ea bohlokoa.
             </p>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

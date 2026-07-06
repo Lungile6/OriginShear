@@ -7,8 +7,12 @@ import { usePaymentHistory } from "../../hooks/usePaymentHistory";
 import { LotStatus, FibreTypeLabel, GradeLabel } from "../../contracts/HarvestLedger";
 import { FARMER_MARKET_ABI, OfferStatus, OfferStatusLabel } from "../../contracts/FarmerMarket";
 import { getContractAddresses } from "../../contracts/addresses";
-import { apiClient } from "../../lib/apiClient";
 import { gramsToKg, formatCUSD, cusdToLSL, parseCUSD, shorten } from "../../lib/utils";
+import Icon from "../../components/ui/Icon";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import { LotCardSkeleton } from "../../components/ui/Skeleton";
+import { inputClassName } from "../../components/ui/FormField";
 
 export default function FarmerMarketSell() {
   const { address } = useAccount();
@@ -20,11 +24,8 @@ export default function FarmerMarketSell() {
 
   const validatedUnlisted = lots.filter((l) => l.status === LotStatus.VALIDATED);
   const lotIds = validatedUnlisted.map((l) => l.lotId);
-
   const marketContract = addresses ? { address: addresses.farmerMarket, abi: FARMER_MARKET_ABI } : null;
 
-  // Resolve offerId for each validated lot, then fetch the offer + filter
-  // to ones this farmer actually owns/listed.
   const { data: offerIdResults } = useReadContracts({
     contracts: marketContract
       ? lotIds.map((id) => ({ ...marketContract, functionName: "lotToOffer", args: [id] }))
@@ -59,76 +60,74 @@ export default function FarmerMarketSell() {
   const listedLotIds = new Set(offers.map((o) => o.lotId.toString()));
   const sellableLots = validatedUnlisted.filter((l) => !listedLotIds.has(l.lotId.toString()));
   const activeOffers = offers.filter((o) => o.status === OfferStatus.IN_ESCROW || o.status === OfferStatus.LISTED);
+  const farmerPayments = paymentHistory.filter(
+    (p) => p.farmer?.toLowerCase() === address?.toLowerCase()
+  );
+
   return (
     <AppLayout role="FARMER" title="ORIGINSHEAR">
-      <div className="px-4 pt-2 pb-8">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h1 className="text-headline-md font-bold">Sell Your Lot</h1>
-            <p className="text-body-sm text-on-surface-variant">Rekisa Sela la Hao</p>
-          </div>
-          <span className="bg-surface-container rounded-full px-3 py-1.5 text-label-sm font-bold flex items-center gap-1.5">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-              <rect x="3" y="6" width="18" height="13" rx="2" />
-            </svg>
-            {formatCUSD(balance)} cUSD
-          </span>
+      <div className="px-margin-mobile pt-stack-lg pb-8 max-w-[1024px] mx-auto">
+        <div className="mb-stack-lg">
+          <h1 className="text-headline-md font-bold text-on-surface">Sell Your Lot</h1>
+          <p className="text-body-md text-on-surface-variant">Rekisa Sela la Hao</p>
         </div>
 
-        <h2 className="text-label-lg text-primary uppercase tracking-widest mb-2">
-          Validated Lots for Sale
-        </h2>
-        {isLoading && <p className="text-body-sm text-on-surface-variant mb-4">Loading…</p>}
-        {!isLoading && sellableLots.length === 0 && (
-          <p className="text-body-sm text-on-surface-variant mb-4">
-            No validated lots available to list right now.
-          </p>
-        )}
-        <div className="space-y-3 mb-6">
-          {sellableLots.map((lot) => (
-            <SellableLotCard
-              key={lot.lotId.toString()}
-              lot={lot}
-              marketAddress={addresses?.farmerMarket}
-              onListed={() => {
-                refetch();
-                refetchOffers();
-              }}
-            />
-          ))}
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-container-high rounded-full w-fit mb-stack-lg shadow-sm">
+          <Icon name="account_balance_wallet" className="text-primary" size={20} />
+          <span className="text-label-sm font-bold text-primary">{formatCUSD(balance)} cUSD</span>
         </div>
+
+        <section className="mb-stack-lg">
+          <h2 className="text-label-lg text-primary uppercase tracking-wider mb-stack-sm">
+            Validated Lots for Sale
+          </h2>
+          {isLoading && (
+            <div className="space-y-stack-md">
+              <LotCardSkeleton />
+            </div>
+          )}
+          {!isLoading && sellableLots.length === 0 && (
+            <p className="text-body-sm text-on-surface-variant">No validated lots available to list right now.</p>
+          )}
+          <div className="space-y-stack-md">
+            {sellableLots.map((lot) => (
+              <SellableLotCard
+                key={lot.lotId.toString()}
+                lot={lot}
+                marketAddress={addresses?.farmerMarket}
+                onListed={() => {
+                  refetch();
+                  refetchOffers();
+                }}
+              />
+            ))}
+          </div>
+        </section>
 
         {activeOffers.length > 0 && (
-          <>
-            <h2 className="text-label-lg text-primary uppercase tracking-widest mb-2">
+          <section className="mb-stack-lg">
+            <h2 className="text-label-lg text-primary uppercase tracking-wider mb-stack-sm">
               Active Offers (Litefiso tse Emetseng)
             </h2>
-            <div className="space-y-3 mb-6">
+            <div className="grid grid-cols-1 gap-stack-md">
               {activeOffers.map((offer) => (
-                <ActiveOfferCard
-                  key={offer.offerId.toString()}
-                  offer={offer}
-                  onReleased={() => {
-                    refetch();
-                    refetchOffers();
-                  }}
-                />
+                <ActiveOfferCard key={offer.offerId.toString()} offer={offer} />
               ))}
             </div>
-          </>
+          </section>
         )}
 
-        {paymentHistory.length > 0 && (
-          <>
-            <h2 className="text-label-lg text-primary uppercase tracking-widest mb-2">
+        {farmerPayments.length > 0 && (
+          <section>
+            <h2 className="text-label-lg text-primary uppercase tracking-wider mb-stack-sm">
               Payment History (Nalane ea Litefiso)
             </h2>
-            <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm divide-y divide-outline-variant">
-              {paymentHistory.map((payment) => (
-                <CompletedOfferRow key={payment.offerId.toString()} payment={payment} />
+            <Card padded={false} className="overflow-hidden divide-y divide-outline-variant">
+              {farmerPayments.map((payment) => (
+                <CompletedOfferRow key={payment.id || payment.offerId.toString()} payment={payment} />
               ))}
-            </div>
-          </>
+            </Card>
+          </section>
         )}
       </div>
     </AppLayout>
@@ -137,6 +136,7 @@ export default function FarmerMarketSell() {
 
 function SellableLotCard({ lot, marketAddress, onListed }) {
   const [askPrice, setAskPrice] = useState("");
+  const [expanded, setExpanded] = useState(false);
   const [listing, setListing] = useState(false);
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
@@ -160,92 +160,88 @@ function SellableLotCard({ lot, marketAddress, onListed }) {
   const busy = isPending || isConfirming;
 
   return (
-    <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-4">
-      <p className="text-label-sm text-on-surface-variant">#2026-{lot.lotId.toString().padStart(3, "0")}</p>
-      <p className="font-bold text-body-lg mb-1">
-        {FibreTypeLabel[lot.fibreType]} (Grade {GradeLabel[lot.grade]})
-      </p>
-      <div className="flex items-center gap-4 text-body-sm text-on-surface-variant mb-3">
-        <span className="flex items-center gap-1">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-            <rect x="4" y="7" width="16" height="13" rx="1.5" />
-          </svg>
-          {gramsToKg(lot.weightGrams)} kg
-        </span>
-        <span className="flex items-center gap-1 text-primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-            <circle cx="12" cy="12" r="9" />
-            <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Verified Quality
-        </span>
+    <Card className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <span className="text-label-sm text-on-surface-variant">#{lot.lotId.toString()}</span>
+        <h4 className="text-headline-sm font-bold">
+          {FibreTypeLabel[lot.fibreType]} (Grade {GradeLabel[lot.grade]})
+        </h4>
+        <div className="flex gap-4 mt-1">
+          <span className="flex items-center gap-1 text-body-sm">
+            <Icon name="weight" size={18} className="text-on-surface-variant" />
+            {gramsToKg(lot.weightGrams)} kg
+          </span>
+          <span className="flex items-center gap-1 text-body-sm">
+            <Icon name="verified" size={18} className="text-on-surface-variant" />
+            Verified Quality
+          </span>
+        </div>
       </div>
-      <div className="flex gap-2">
-        <input
-          type="number"
-          min="0"
-          value={askPrice}
-          onChange={(e) => setAskPrice(e.target.value)}
-          placeholder="Ask price (cUSD)"
-          className="flex-1 h-11 rounded-lg border border-outline-variant bg-surface-container px-3 text-body-sm focus:border-primary focus:border-2 outline-none"
-        />
-        <button
-          onClick={handleList}
-          disabled={busy || !askPrice}
-          className="h-11 px-5 rounded-lg bg-primary text-on-primary font-semibold disabled:opacity-60"
-        >
-          {busy ? "…" : "List for Sale"}
-        </button>
-      </div>
-      {error && <p className="text-label-sm text-error mt-2">{error.shortMessage}</p>}
-    </div>
+
+      {!expanded ? (
+        <Button fullWidth={false} className="self-start px-6 rounded-[10px]" onClick={() => setExpanded(true)}>
+          List for Sale (Rekisa)
+        </Button>
+      ) : (
+        <div className="bg-primary-container/10 border-2 border-primary-container rounded-xl p-4 space-y-stack-md">
+          <h3 className="text-headline-sm text-primary-container flex items-center gap-2 font-bold">
+            <Icon name="sell" />
+            Listing Details: #{lot.lotId.toString()}
+          </h3>
+          <div>
+            <label className="block text-label-lg text-on-surface mb-2">Price in cUSD (Theko ka cUSD)</label>
+            <div className="relative">
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={askPrice}
+                onChange={(e) => setAskPrice(e.target.value)}
+                placeholder="0.00"
+                className={`${inputClassName} text-headline-sm pr-16`}
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant font-bold">
+                cUSD
+              </span>
+            </div>
+            <p className="mt-2 text-primary font-bold text-body-lg">
+              ≈ {askPrice ? cusdToLSL(parseCUSD(askPrice)) : "0.00"} LSL
+            </p>
+          </div>
+          <Button onClick={handleList} disabled={busy || !askPrice} loading={busy}>
+            Confirm Listing (Netefatsa)
+          </Button>
+          <p className="text-label-sm text-on-surface-variant text-center">Includes 2% platform fee on final sale</p>
+        </div>
+      )}
+      {error && <p className="text-label-sm text-error">{error.shortMessage}</p>}
+    </Card>
   );
 }
 
-function ActiveOfferCard({ offer, onReleased }) {
-  const [isReleasing, setIsReleasing] = useState(false);
-  const [releaseError, setReleaseError] = useState("");
-
-  async function handleRelease() {
-    setIsReleasing(true);
-    setReleaseError("");
-    try {
-      await apiClient.post(
-        `/api/market/offers/${offer.offerId.toString()}/release`,
-        {},
-        { auth: true }
-      );
-      onReleased?.();
-    } catch (err) {
-      setReleaseError(err?.message || "Failed to release payment");
-    } finally {
-      setIsReleasing(false);
-    }
-  }
-
+function ActiveOfferCard({ offer }) {
   return (
-    <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-4 flex justify-between items-center">
-      <div>
-        <p className="text-label-sm text-on-surface-variant">Lot #{offer.lotId.toString()}</p>
-        <p className="font-bold text-headline-sm">{formatCUSD(offer.askPriceWei)} cUSD</p>
-        <p className="text-label-sm text-on-surface-variant">Buyer: {shorten(offer.buyer)}</p>
-      </div>
-      <div className="text-right">
-        <span className="inline-block bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full px-3 py-1 text-label-sm font-semibold mb-2">
+    <Card>
+      <div className="flex justify-between items-start mb-2">
+        <span className="text-label-sm text-on-surface-variant">Lot #{offer.lotId.toString()}</span>
+        <span className="bg-tertiary-container text-on-tertiary-container text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
           {OfferStatusLabel[offer.status]}
         </span>
-        {offer.status === OfferStatus.IN_ESCROW && (
-          <button
-            onClick={handleRelease}
-            disabled={isReleasing}
-            className="block h-9 px-4 rounded-lg border border-outline-variant text-on-surface text-label-sm font-semibold disabled:opacity-60"
-          >
-            {isReleasing ? "…" : "Release Fibre"}
-          </button>
-        )}
-        {releaseError && <p className="text-label-sm text-error mt-2">{releaseError}</p>}
       </div>
-    </div>
+      <div className="flex justify-between items-center">
+        <div>
+          <p className="text-body-md font-bold">{formatCUSD(offer.askPriceWei)} cUSD</p>
+          {offer.status === OfferStatus.IN_ESCROW && (
+            <p className="text-label-sm text-on-surface-variant font-mono">Buyer: {shorten(offer.buyer)}</p>
+          )}
+        </div>
+        {offer.status === OfferStatus.IN_ESCROW && (
+          <p className="text-label-sm text-on-surface-variant max-w-[140px] text-right">
+            Awaiting LNWMGA validator to release payment
+          </p>
+        )}
+      </div>
+    </Card>
   );
 }
 
@@ -253,14 +249,12 @@ function CompletedOfferRow({ payment }) {
   return (
     <div className="p-4 flex justify-between items-center">
       <div>
-        <p className="font-bold text-body-lg">{formatCUSD(payment.netAmount)} cUSD</p>
+        <p className="text-body-md font-bold text-on-surface">{formatCUSD(payment.netAmount)} cUSD</p>
         <p className="text-label-sm text-on-surface-variant">Lot #{payment.lotId.toString()} · Net Earnings</p>
       </div>
       <div className="text-right">
-        <p className="font-bold text-primary">+{cusdToLSL(payment.netAmount)} LSL</p>
-        <p className="text-[10px] text-on-surface-variant">
-          Fee: {formatCUSD(payment.fee)} cUSD (2%)
-        </p>
+        <span className="text-primary font-bold text-label-sm">+ {cusdToLSL(payment.netAmount)} LSL</span>
+        <p className="text-[10px] text-on-surface-variant">Net after 2% fee</p>
       </div>
     </div>
   );
