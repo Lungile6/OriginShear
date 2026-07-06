@@ -20,10 +20,9 @@ export function useNewsFeed() {
   }, []);
 
   const publishNews = useCallback(async (payload) => {
-    const data = await apiClient.post("/api/news", payload);
-    setNews((prev) => [data.item, ...prev]);
-    return data.item;
-  }, []);
+    await apiClient.post("/api/news", payload, { auth: true });
+    await fetchNews();
+  }, [fetchNews]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
