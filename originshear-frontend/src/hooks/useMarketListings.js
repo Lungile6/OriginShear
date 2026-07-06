@@ -3,17 +3,18 @@ import { apiClient } from "../lib/apiClient";
 
 /**
  * Loads LISTED market offers from the API (subgraph-backed).
+ * Public read — no wallet required for browsing.
  */
 export function useMarketListings() {
   const [listings, setListings] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const fetchListings = useCallback(async () => {
     setIsLoading(true);
+    setError("");
     try {
-      const response = await apiClient.get("/api/market/offers?page=1&limit=100&status=LISTED", {
-        auth: true,
-      });
+      const response = await apiClient.get("/api/market/offers?page=1&limit=100&status=LISTED");
       const mapped = (response.data || []).map((offer) => ({
         offerId: BigInt(offer.offerId),
         lotId: BigInt(offer.lot?.lotId || 0),
@@ -29,7 +30,7 @@ export function useMarketListings() {
       }));
       setListings(mapped);
     } catch (err) {
-      console.error("Error loading market listings from API:", err);
+      setError(err?.message || "Failed to load marketplace listings");
       setListings([]);
     } finally {
       setIsLoading(false);
@@ -43,5 +44,5 @@ export function useMarketListings() {
     return () => clearTimeout(timer);
   }, [fetchListings]);
 
-  return { listings, isLoading, refetch: fetchListings };
+  return { listings, isLoading, error, refetch: fetchListings };
 }

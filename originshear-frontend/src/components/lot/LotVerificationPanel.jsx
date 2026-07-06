@@ -4,6 +4,10 @@ import { VERIFIER_ABI } from "../../contracts/ProofOfOriginVerifier";
 import { FibreTypeLabel, GradeLabel } from "../../contracts/HarvestLedger";
 import { getContractAddresses } from "../../contracts/addresses";
 import { gramsToKg, shorten } from "../../lib/utils";
+import { downloadVerificationReport } from "../../lib/verificationReport";
+import Button from "../ui/Button";
+import Card from "../ui/Card";
+import Skeleton from "../ui/Skeleton";
 
 /**
  * Shared origin-check UI used by PublicLotVerification and buyer lot detail.
@@ -37,9 +41,11 @@ export default function LotVerificationPanel({
 
   if (isLoading) {
     return (
-      <p className="text-center text-body-sm text-on-surface-variant py-8">
-        Verifying on Celo… / E netefatsa Celo…
-      </p>
+      <div className="py-8 space-y-4">
+        <Skeleton className="h-20 w-20 rounded-full mx-auto" />
+        <Skeleton className="h-6 w-40 mx-auto" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+      </div>
     );
   }
 
@@ -93,7 +99,7 @@ export default function LotVerificationPanel({
         )}
       </div>
 
-      <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-5 space-y-4">
+      <Card className="space-y-4">
         <FieldRow icon="id" label="Farmer Identity (Boitsebiso ba Sehoai)" value={shorten(result.farmer, 8, 6)} />
         <div className="grid grid-cols-2 gap-4">
           <FieldRow icon="material" label="Material (Thepa)" value={FibreTypeLabel[result.fibreType]} />
@@ -102,18 +108,27 @@ export default function LotVerificationPanel({
           <FieldRow icon="zone" label="Zone (Sebaka)" value={result.gpsZone} />
         </div>
         <FieldRow icon="season" label="Season (Nako)" value={`Harvest ${result.seasonYear}`} />
-      </div>
+      </Card>
 
       {showDownloadButton && result.valid && (
-        <button
+        <Button
           type="button"
-          className="w-full h-14 rounded-lg bg-primary text-on-primary font-semibold mt-5 flex items-center justify-center gap-2"
+          onClick={() =>
+            downloadVerificationReport({
+              lotId,
+              proof,
+              result,
+            })
+          }
+          className="mt-5"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+              <path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          }
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-            <path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
           Download Verification (PDF)
-        </button>
+        </Button>
       )}
     </>
   );
