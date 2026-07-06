@@ -1,6 +1,6 @@
 # ORIGINSHEAR IPFS Integration
 
-IPFS integration for storing metadata, photos, and documents for ORIGINSHEAR.
+IPFS integration for storing wool and mohair lot metadata, photos, and documents for ORIGINSHEAR.
 
 ## Features
 
@@ -9,7 +9,7 @@ IPFS integration for storing metadata, photos, and documents for ORIGINSHEAR.
 - Retrieve metadata from IPFS
 - Gateway URL generation
 - Batch upload for lots with photos
-- Farmer profile with documents
+- Wool and mohair farmer profile with documents
 
 ## Setup
 

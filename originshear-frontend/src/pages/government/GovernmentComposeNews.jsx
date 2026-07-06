@@ -69,7 +69,7 @@ export default function GovernmentComposeNews() {
 
         <PageHeader
           title="Compose Announcement"
-          subtitle="Publish official bulletins visible to all farmers and buyers (News Editor)"
+          subtitle="Publish official bulletins visible to wool and mohair farmers and buyers (News Editor)"
         />
 
         {success && (
@@ -171,7 +171,7 @@ export default function GovernmentComposeNews() {
           {error && <p className="text-body-sm text-error">{error}</p>}
 
           <Button type="submit" size="lg" loading={publishing} disabled={publishing || !title.trim() || !bodyEn.trim()} icon={<Icon name="send" />}>
-            {publishing ? "Publishing on-chain…" : "Publish to All Farmers (Hatisa ho Bohle)"}
+            {publishing ? "Publishing on-chain…" : "Publish to Wool & Mohair Farmers (Hatisa ho Bohle)"}
           </Button>
           <p className="text-center text-label-sm text-on-surface-variant">
             Blockchain signature is applied automatically upon publication to ensure data integrity.

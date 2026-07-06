@@ -1,7 +1,7 @@
 {
   "name": "originshear-contracts",
   "version": "1.0.0",
-  "description": "ORIGINSHEAR — Blockchain Proof of Origin and marketplace for Lesotho wool & mohair smallholder farmers (Celo + Solidity).",
+  "description": "ORIGINSHEAR — Blockchain Proof of Origin and marketplace for Lesotho wool & mohair farmers (Celo + Solidity).",
   "license": "MIT",
   "scripts": {
     "test": "hardhat test",

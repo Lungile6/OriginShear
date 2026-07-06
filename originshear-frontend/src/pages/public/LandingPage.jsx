@@ -28,15 +28,15 @@ export default function LandingPage() {
 
       <section className="bg-role-validator text-white px-margin-mobile py-10 pt-20">
         <h1 className="text-headline-lg font-bold mb-3">
-          From Highland Farm to Global Market — With Proof.
+          From Lesotho Pasture to Global Market — With Proof.
         </h1>
         <p className="text-body-md text-white/80 mb-6">
-          We provide Lesotho's wool and mohair producers with unforgeable digital identities,
+          We provide Lesotho's wool and mohair farmers with unforgeable digital identities,
           securing fair value through blockchain transparency.
         </p>
         <div className="space-y-3">
           <Button size="lg" onClick={() => navigate("/role-select")} icon={<Icon name="agriculture" />}>
-            I'm a Farmer
+            I'm a Wool & Mohair Farmer
           </Button>
           <Button
             size="lg"
@@ -52,12 +52,12 @@ export default function LandingPage() {
 
       <section className="px-margin-mobile py-10 text-center">
         <h2 className="text-headline-md font-bold mb-6 max-w-sm mx-auto">
-          Lesotho's farmers produce world-class wool. The system fails them.
+          Lesotho's wool and mohair farmers produce world-class fibre. The system fails them.
         </h2>
         <div className="space-y-stack-md">
-          <StatCard value="25%" label="Rejection Rate" desc="Lots often rejected at port due to lack of traceable documentation and provenance records." />
-          <StatCard value="22%" label="Value Lost" desc="Middlemen and brokers capture significant margins when farmers lack direct market data." />
-          <StatCard value="0" label="Digital Records" desc="Vast majority of farmers have no verifiable history, making credit and insurance inaccessible." />
+          <StatCard value="25%" label="Rejection Rate" desc="Bales often rejected at port due to lack of traceable documentation and provenance records." />
+          <StatCard value="22%" label="Value Lost" desc="Middlemen and brokers capture significant margins when wool and mohair farmers lack direct market data." />
+          <StatCard value="0" label="Digital Records" desc="Most wool and mohair farmers have no verifiable history, making credit and insurance inaccessible." />
         </div>
       </section>
 
@@ -77,7 +77,7 @@ export default function LandingPage() {
       <section className="px-margin-mobile py-10">
         <h2 className="text-headline-md font-bold mb-6">Designed for the entire value chain.</h2>
         <div className="space-y-stack-md">
-          <AudienceRow icon="agriculture" border="border-l-role-farmer" pretitle="LNWMGA Members" title="Farmers" desc="Protect your hard work with a permanent record across global markets directly." cta="Join Portal" onClick={() => navigate("/role-select")} />
+          <AudienceRow icon="agriculture" border="border-l-role-farmer" pretitle="LNWMGA Members" title="Wool & Mohair Farmers" desc="Protect your harvest with a permanent on-chain record and sell directly to global buyers." cta="Join Portal" onClick={() => navigate("/role-select")} />
           <AudienceRow icon="verified_user" border="border-l-role-validator" pretitle="Official Agents" title="Validators" desc="Digitize the grading and clearing process with mobile tools built for the field." cta="Agent Login" onClick={() => navigate("/role-select")} />
           <AudienceRow icon="account_balance" border="border-l-role-government" pretitle="Government" title="Ministry" desc="Real-time agricultural data dashboards for policy making and trade oversight." cta="Admin Access" onClick={() => navigate("/role-select")} />
           <AudienceRow icon="shopping_cart" border="border-l-role-buyer" pretitle="Global Traders" title="Buyers" desc="Source with absolute confidence. Proof of origin and quality in every single bale." cta="Marketplace" onClick={handleBuyerEntry} />
@@ -85,7 +85,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="px-margin-mobile py-8 text-center text-label-sm text-on-surface-variant border-t border-outline-variant">
-        © 2026 ORIGINSHEAR. Built for Lesotho Agriculture.
+        © 2026 ORIGINSHEAR. Built for Lesotho's wool and mohair industry.
       </footer>
     </div>
   );

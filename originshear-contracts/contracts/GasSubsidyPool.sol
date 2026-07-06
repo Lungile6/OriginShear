@@ -8,13 +8,13 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /**
  * @title GasSubsidyPool
  * @author Lungile Mabelebele — ALU Capstone 2026
- * @notice Manages gas subsidy distribution to rural farmers using platform fees
- *         collected from the FarmerMarket (2% of each transaction).
+ * @notice Manages gas subsidy distribution to wool and mohair farmers using
+ *         platform fees collected from the FarmerMarket (2% of each transaction).
  *
  * Roles:
  *   DEFAULT_ADMIN_ROLE  — LNWMGA system admin
  *   GOVERNMENT_ROLE     — Ministry of Agriculture officials
- *   FARMER_ROLE         — registered smallholder farmers
+ *   FARMER_ROLE         — registered wool and mohair farmers
  */
 contract GasSubsidyPool is AccessControl, Pausable {
 

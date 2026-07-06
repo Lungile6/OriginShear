@@ -116,7 +116,7 @@ export default function GovernmentDashboard() {
         <PageHeader
           en="Mark Management Dashboard"
           st="Matšoao a Mmuso"
-          subtitle="Admin Control Panel — Quthing District"
+          subtitle="Admin Control Panel — National Wool & Mohair Sector"
           action={
             <Link to="/government/news/compose">
               <Button fullWidth={false} size="sm" icon={<Icon name="campaign" className="!text-base" />}>

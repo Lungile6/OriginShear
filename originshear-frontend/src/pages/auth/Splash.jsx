@@ -34,7 +34,7 @@ export default function Splash() {
             Connect Valora / MetaMask
           </Button>
           <p className="text-center text-label-sm text-on-surface-variant">
-            Powered by Celo · No fees for farmers
+            Powered by Celo · No fees for wool & mohair farmers
           </p>
         </div>
       </div>

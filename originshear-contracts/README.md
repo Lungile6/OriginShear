@@ -1,6 +1,6 @@
 # ORIGINSHEAR
 
-**Design and Implementation of a High-Performance Blockchain Ledger for Enhancing Supply Chain Transparency and Market Access for Lesotho Farmers**
+**Design and Implementation of a High-Performance Blockchain Ledger for Enhancing Supply Chain Transparency and Market Access for Lesotho Wool and Mohair Farmers**
 
 > African Leadership University · Bachelor of Science in Software Engineering
 > Submitted by: Lungile Mabelebele · Supervisor: Dr. Aaron Izang · May 2026
@@ -11,23 +11,23 @@
 
 ## Overview
 
-ORIGINSHEAR gives every wool and mohair bale produced by smallholder farmers in Lesotho's Quthing district an unforgeable digital identity on the **Celo blockchain**. Farmers register harvest lots from a basic Android phone on 2G/3G, receive a cryptographic **Proof of Origin** hash, generate QR codes for export checkpoint verification, and receive **cUSD** payments directly from buyers — removing intermediaries who currently capture 15–22% of farm-gate value.
+ORIGINSHEAR gives every wool and mohair bale produced by Lesotho wool and mohair farmers an unforgeable digital identity on the **Celo blockchain**. Farmers register harvest lots from a basic Android phone on 2G/3G, receive a cryptographic **Proof of Origin** hash, generate QR codes for export checkpoint verification, and receive **cUSD** payments directly from buyers — removing intermediaries who currently capture 15–22% of farm-gate value.
 
 ### The Problem
 
-- **25%** of Lesotho's organic wool shipments are rejected or underpriced at South African export checkpoints due to missing traceability records.
-- **15–22%** of farm-gate value is captured by intermediaries before farmers receive payment.
+- **25%** of Lesotho's wool and mohair shipments are rejected or underpriced at South African export checkpoints due to missing traceability records.
+- **15–22%** of farm-gate value is captured by intermediaries before wool and mohair farmers receive payment.
 - The Lesotho Agricultural Information System (LAIS) can be edited by officials without trace.
-- Paper records get lost or falsified in the Quthing highland supply chain.
+- Paper records get lost or falsified across Lesotho's wool and mohair supply chain.
 
 ### The Solution
 
 | Step | What happens |
 |---|---|
-| 1. Register | Farmer submits a harvest lot (fibre type, grade, weight, GPS zone, season) from their phone |
+| 1. Register | Wool and mohair farmer submits a harvest lot (fibre type, grade, weight, GPS zone, season) from their phone |
 | 2. Proof of Origin | The contract computes a `keccak256` hash unique to that lot, on-chain |
 | 3. QR Code | Farmer generates a QR code encoding the lot ID and Proof of Origin |
-| 4. Get Paid | Buyer scans the QR at the checkpoint, purchases via cUSD escrow, farmer is paid directly |
+| 4. Get Paid | Buyer scans the QR at the checkpoint, purchases via cUSD escrow; the wool and mohair farmer is paid directly |
 
 ---
 
@@ -71,7 +71,7 @@ originshear-contracts/
 
 The core, immutable registry of harvest lots.
 
-- **Roles:** `DEFAULT_ADMIN_ROLE` (LNWMGA system admin), `VALIDATOR_ROLE` (LNWMGA district validators), `FARMER_ROLE` (registered smallholder farmers).
+- **Roles:** `DEFAULT_ADMIN_ROLE` (LNWMGA system admin), `VALIDATOR_ROLE` (LNWMGA district validators), `FARMER_ROLE` (registered wool and mohair farmers).
 - **`registerFarmer(wallet, farmerId, district)`** — admin-only; onboards a farmer and grants them `FARMER_ROLE`.
 - **`registerLot(fibreType, grade, weightGrams, gpsZone, seasonYear, metadataURI)`** — farmer-only; registers a new lot and computes its Proof of Origin hash:
   ```

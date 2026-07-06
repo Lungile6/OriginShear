@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
  * Roles:
  *   DEFAULT_ADMIN_ROLE  — LNWMGA system admin
  *   GOVERNMENT_ROLE     — Ministry of Agriculture officials
- *   FARMER_ROLE         — registered smallholder farmers
+ *   FARMER_ROLE         — registered wool and mohair farmers
  */
 contract IndustryMarkRegistry is AccessControl, Pausable {
 

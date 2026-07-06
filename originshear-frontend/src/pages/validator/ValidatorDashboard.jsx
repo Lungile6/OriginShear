@@ -30,7 +30,7 @@ export default function ValidatorDashboard() {
       <DashboardHeader
         role="VALIDATOR"
         subtitle="LNWMGA Portal"
-        detail="District Office (Quthing)"
+        detail="LNWMGA District Office"
       />
 
       <section className="px-4 flex gap-3 overflow-x-auto hide-scrollbar pb-1">

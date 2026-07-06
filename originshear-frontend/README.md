@@ -1,11 +1,12 @@
 # ORIGINSHEAR Frontend
 
-React + Vite + Tailwind CSS v4 frontend for ORIGINSHEAR, wired to the live
+React + Vite + Tailwind CSS v4 frontend for ORIGINSHEAR — a proof-of-origin
+and marketplace platform for Lesotho wool and mohair farmers — wired to the live
 HarvestLedger, FarmerMarket, and ProofOfOriginVerifier contracts via
 [wagmi](https://wagmi.sh) + [viem](https://viem.sh).
 
-Translated from the Stitch design export (24 screens across Farmer,
-Validator, Government, and public/Buyer flows) into a single routed
+Translated from the Stitch design export (24 screens across wool & mohair farmer,
+validator, government, and public/buyer flows) into a single routed
 React app with real on-chain reads/writes — no mock data on any
 authenticated screen.
 

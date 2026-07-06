@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 /**
  * @title ReputationSystem
  * @author Lungile Mabelebele — ALU Capstone 2026
- * @notice On-chain reputation tracking for farmers and buyers
+ * @notice On-chain reputation tracking for wool and mohair farmers and buyers
  *         based on transaction history and dispute outcomes.
  *
  * Roles:

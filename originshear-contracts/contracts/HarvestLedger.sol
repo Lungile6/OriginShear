@@ -9,13 +9,13 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * @title HarvestLedger
  * @author Lungile Mabelebele — ALU Capstone 2026
  * @notice Immutable registry of wool and mohair harvest lots for Lesotho
- *         smallholder farmers (Quthing district). Each lot is assigned a
- *         unique Proof of Origin hash computed on-chain at registration.
+ *         wool and mohair farmers. Each lot is assigned a unique Proof of
+ *         Origin hash computed on-chain at registration.
  *
  * Roles:
  *   DEFAULT_ADMIN_ROLE  — LNWMGA system admin
  *   VALIDATOR_ROLE      — LNWMGA district validators
- *   FARMER_ROLE         — registered smallholder farmers
+ *   FARMER_ROLE         — registered wool and mohair farmers
  */
 contract HarvestLedger is AccessControl, Pausable, ReentrancyGuard {
 
@@ -83,7 +83,7 @@ contract HarvestLedger is AccessControl, Pausable, ReentrancyGuard {
     }
 
     /**
-     * @notice Register a smallholder farmer and grant them FARMER_ROLE.
+     * @notice Register a wool and mohair farmer and grant them FARMER_ROLE.
      * @dev Admin-only. Reverts if the wallet is already registered.
      */
     function registerFarmer(

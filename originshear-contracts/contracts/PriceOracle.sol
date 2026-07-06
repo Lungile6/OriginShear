@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @title PriceOracle
  * @author Lungile Mabelebele — ALU Capstone 2026
  * @notice On-chain price oracle for wool and mohair market prices
- *         Provides fair market price suggestions for farmers.
+ *         Provides fair market price suggestions for wool and mohair farmers.
  *
  * Roles:
  *   DEFAULT_ADMIN_ROLE  — LNWMGA system admin
