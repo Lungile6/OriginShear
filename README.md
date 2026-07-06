@@ -28,9 +28,8 @@ OriginShear/
 
 | Item | Link |
 |------|------|
-| **Demo video (~5 min)** | `[PASTE YOUR VIDEO URL HERE]` |
-| **Deployed application** | `[PASTE YOUR LIVE APP URL HERE]` |
-| **Installable package / release** | `[OPTIONAL — e.g. GitHub Release or Drive zip]` |
+| **Demo video (~5 min)** | `https://youtu.be/Tp-5i1Z0zkw` |
+| **Deployed application** | `[NO LIVE APP URL YET]` |
 
 **Suggested video content (for reviewers):**
 1. Connect MetaMask on Celo Sepolia
@@ -40,9 +39,7 @@ OriginShear/
 5. Optional: government news publish or validator escrow release
 
 Example placeholder formats:
-- YouTube: `https://youtu.be/XXXXXXXXXXX`
-- Google Drive: `https://drive.google.com/file/d/XXXXXXXX/view`
-- Loom: `https://www.loom.com/share/XXXXXXXX`
+- YouTube: `https://youtu.be/Tp-5i1Z0zkw`
 
 ---
 
