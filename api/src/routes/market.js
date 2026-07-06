@@ -56,7 +56,7 @@ function invalidateMarketCache(cache) {
  * GET /api/market/offers
  * Get market offers with pagination
  */
-router.get('/offers', authenticate, async (req, res) => {
+router.get('/offers', async (req, res) => {
   try {
     const { page, limit, skip } = parsePagination(req.query);
     const parsedStatus = parseStatusFilter(req.query.status);
@@ -140,7 +140,7 @@ router.get('/offers', authenticate, async (req, res) => {
  * GET /api/market/offers/:id
  * Get offer by ID
  */
-router.get('/offers/:id', authenticate, async (req, res) => {
+router.get('/offers/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const numericId = Number(id);
