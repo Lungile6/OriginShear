@@ -6,9 +6,9 @@ dataSources:
     name: HarvestLedger
     network: celo-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000"
+      address: "0x617451963A2ae2B143311094fF5F921a4B169B43"
       abi: HarvestLedger
-      startBlock: 0
+      startBlock: 29778550
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -33,9 +33,9 @@ dataSources:
     name: FarmerMarket
     network: celo-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000"
+      address: "0x3675Db5F51917D55A3D9E96AdD137b314633b003"
       abi: FarmerMarket
-      startBlock: 0
+      startBlock: 29778556
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -62,9 +62,9 @@ dataSources:
     name: IndustryMarkRegistry
     network: celo-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000"
+      address: "0x084E3c8427203C698f26d4eF34348a4B19041734"
       abi: IndustryMarkRegistry
-      startBlock: 0
+      startBlock: 29778567
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
