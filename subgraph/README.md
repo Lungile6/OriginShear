@@ -22,7 +22,14 @@ cp ../originshear-contracts/artifacts/contracts/IndustryMarkRegistry.sol/Industr
 
 ## Update Contract Addresses
 
-Update the addresses in `subgraph.yaml` with your deployed contract addresses.
+Contract addresses and deployment start blocks are synced from `deployments.celoSepolia.json`:
+
+```bash
+# From repo root
+npm run sync:subgraph celoSepolia
+```
+
+Or edit `subgraph.yaml` manually. Use the contract creation block from Blockscout as `startBlock` (not `0`).
 
 ## Generate Types
 
@@ -45,11 +52,21 @@ npm run create-local
 npm run deploy-local
 ```
 
-### Hosted Service
+### Hosted Service (The Graph Studio)
+
+From repo root:
 
 ```bash
-npm run deploy
+npm run sync:subgraph celoSepolia
+npm run subgraph:build
+cd subgraph
+npx graph auth --studio <YOUR_DEPLOY_KEY>
+npx graph deploy --studio origin-shear --version-label v0.0.3
 ```
+
+After deploy, set `GRAPHQL_ENDPOINT` in `api/.env` to the Studio query URL (e.g. `https://api.studio.thegraph.com/query/<id>/origin-shear/version/latest`). Wait until the subgraph shows **Synced** in Studio before testing API list endpoints.
+
+If deploy returns **HTTP 504**, retry after a few minutes — Studio occasionally times out on upload.
 
 ## Query Examples
 

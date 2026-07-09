@@ -1,0 +1,25 @@
+
+=== OriginShear Smoke Test ===
+
+API: http://127.0.0.1:3000
+RPC: https://celo-sepolia.g.alchemy.com/v2/***
+Subgraph: configured
+
+✅ Celo Sepolia RPC — chainId 11142220
+✅ On-chain HarvestLedger.totalLots() — 0
+✅ On-chain FarmerMarket.offers(1) — status 0
+✅ On-chain NewsBulletin.getActiveBulletins() — 0 active
+✅ On-chain IndustryMarkRegistry.marks(1) — no mark #1 yet (contract reachable)
+❌ Subgraph lots query — Store error: query execution failed: Subgraph `QmQaBgvRWnm1gwRoqpdb5nohoH1ooh71Aca5bA2Naskgfc` has not started syncing yet. Wait for it to ingest a few blocks before querying it
+✅ API /health
+✅ API /api/ipfs/health — {"ok":true,"provider":"infura","pinataConfigured":false,"infuraJwtKeyId":true,"infuraPrivateKeyFound":true,"devFallbackE
+✅ API auth verify JWT
+❌ API GET /api/lots — status 500 {"error":"Failed to fetch lots"}
+❌ API GET /api/market/offers — status 500 {"error":"Failed to fetch offers"}
+✅ API GET /api/news — 0 bulletins (on-chain read)
+❌ API GET /api/marks — status 500 {"error":"Failed to fetch marks"}
+✅ Lot registration wallet-direct guidance (501)
+✅ Buyer purchase wallet-direct guidance (501)
+
+=== Summary: 11 passed, 4 failed ===
+

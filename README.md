@@ -97,7 +97,7 @@ INDUSTRY_MARK_REGISTRY_ADDRESS=0x084E3c8427203C698f26d4eF34348a4B19041734
 NEWS_BULLETIN_ADDRESS=0x693AC50d8e320b3A5a513454830beA1A3698FD9e
 
 # Subgraph — ask the repo owner or use the value in their shared .env
-GRAPHQL_ENDPOINT=https://api.studio.thegraph.com/query/1756052/origin-shear/version/latest
+GRAPHQL_ENDPOINT=https://api.studio.thegraph.com/query/1756052/origin-shear/v0.0.4
 
 # Local dev: no Infura/Pinata required
 IPFS_DEV_FALLBACK=true
