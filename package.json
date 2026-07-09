@@ -21,6 +21,10 @@
     "deploy:local": "npm run deploy:local --workspace=originshear-contracts",
     "deploy:celo-sepolia": "npm run deploy:celo-sepolia --workspace=originshear-contracts",
     "deploy:celo": "npm run deploy:celo --workspace=originshear-contracts",
-    "sync:addresses": "node scripts/sync-deployments.js"
+    "sync:addresses": "node scripts/sync-deployments.js",
+    "sync:subgraph": "node scripts/sync-subgraph.js",
+    "subgraph:build": "npm --prefix subgraph run codegen && npm --prefix subgraph run build",
+    "subgraph:deploy": "npm run sync:subgraph celoSepolia && npm run subgraph:build && npm --prefix subgraph exec graph deploy --studio origin-shear --version-label",
+    "seed:farmer": "NODE_PATH=./api/node_modules node scripts/seed-demo.js"
   }
 }
