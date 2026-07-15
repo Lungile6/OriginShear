@@ -30,11 +30,20 @@ router.post(
   "/lot-metadata",
   [
     authenticate,
-    body("fibreType").isIn(["0", "1", "2"]).withMessage("Invalid fibre type"),
-    body("grade").isIn(["0", "1", "2"]).withMessage("Invalid grade"),
-    body("weightGrams").isInt({ min: 1, max: 4000000 }).withMessage("Invalid weight"),
-    body("gpsZone").notEmpty().withMessage("GPS zone required"),
-    body("seasonYear").notEmpty().withMessage("Season year required"),
+    body("fibreType")
+      .customSanitizer((v) => String(v))
+      .isIn(["0", "1", "2"])
+      .withMessage("Invalid fibre type"),
+    body("grade")
+      .customSanitizer((v) => String(v))
+      .isIn(["0", "1", "2"])
+      .withMessage("Invalid grade"),
+    body("weightGrams")
+      .customSanitizer((v) => String(v))
+      .isInt({ min: 1, max: 4000000 })
+      .withMessage("Invalid weight (1–4,000,000 grams)"),
+    body("gpsZone").trim().notEmpty().withMessage("GPS zone required"),
+    body("seasonYear").trim().notEmpty().withMessage("Season year required"),
   ],
   async (req, res) => {
     try {

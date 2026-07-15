@@ -7,7 +7,10 @@ const onchainRoles = require('../lib/onchainRoles');
 
 const router = express.Router();
 const CHALLENGE_TTL_SECONDS = Number(process.env.AUTH_CHALLENGE_TTL_SECONDS || 300);
-const ENABLE_ONCHAIN_ROLE_RESOLUTION = process.env.ENABLE_ONCHAIN_ROLE_RESOLUTION === 'true';
+
+function isOnchainRoleResolutionEnabled() {
+  return process.env.ENABLE_ONCHAIN_ROLE_RESOLUTION === 'true';
+}
 
 function challengeCacheKey(wallet) {
   return `auth:challenge:${wallet.toLowerCase()}`;
@@ -112,7 +115,7 @@ router.post('/login', [
       primaryRole: 'BUYER',
     };
 
-    const roleClaims = ENABLE_ONCHAIN_ROLE_RESOLUTION && onchainRoles.getWalletRoleClaims
+    const roleClaims = isOnchainRoleResolutionEnabled() && onchainRoles.getWalletRoleClaims
       ? await onchainRoles.getWalletRoleClaims(wallet)
       : fallbackRoleClaims;
 

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
-import { authenticateApiSession, getApiToken } from "../lib/apiAuth";
+import { ensureApiSession, getApiTokenForWallet, clearApiToken } from "../lib/apiAuth";
 
 /**
- * Ensures a JWT exists whenever a wallet is connected on protected screens.
+ * Ensures a valid JWT exists whenever a wallet is connected on protected screens.
  */
 export function useApiAuth({ enabled = true } = {}) {
   const { address, isConnected } = useAccount();
@@ -16,15 +16,15 @@ export function useApiAuth({ enabled = true } = {}) {
       setAuthError("");
       return;
     }
-    if (getApiToken()) return;
 
     let cancelled = false;
     setIsAuthenticating(true);
     setAuthError("");
 
-    authenticateApiSession(address, signMessageAsync)
+    ensureApiSession(address, signMessageAsync)
       .catch((err) => {
         if (!cancelled) {
+          clearApiToken();
           setAuthError(err?.message || "Could not sign in to the API. Protected actions may fail.");
         }
       })
@@ -37,5 +37,5 @@ export function useApiAuth({ enabled = true } = {}) {
     };
   }, [enabled, isConnected, address, signMessageAsync]);
 
-  return { authError, isAuthenticating, hasToken: Boolean(getApiToken()) };
+  return { authError, isAuthenticating, hasToken: Boolean(getApiTokenForWallet(address)) };
 }

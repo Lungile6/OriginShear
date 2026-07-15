@@ -29,6 +29,7 @@ describe("Data-value coverage", () => {
     process.env.JWT_SECRET = "test-secret";
     process.env.JWT_EXPIRES_IN = "1h";
     process.env.AUTH_CHALLENGE_TTL_SECONDS = "120";
+    process.env.ENABLE_ONCHAIN_ROLE_RESOLUTION = "false";
     app = require("../src/index");
     token = await issueToken(app);
   });

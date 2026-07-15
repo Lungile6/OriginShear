@@ -11,13 +11,13 @@ import { DEV_BYPASS_ROLE_GUARDS } from "../lib/devBypass";
  *   (typically a role-specific "pending access" onboarding screen)
  */
 export default function RequireRole({ role, redirectTo, children }) {
-  if (DEV_BYPASS_ROLE_GUARDS) {
-    return children;
-  }
-
   const location = useLocation();
   const { isConnected } = useAccount();
   const { roles, isLoadingRoles, hasContracts } = useRole();
+
+  if (DEV_BYPASS_ROLE_GUARDS) {
+    return children;
+  }
 
   if (!isConnected) {
     return <Navigate to="/connect" state={{ from: location, intendedRole: role }} replace />;

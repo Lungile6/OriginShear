@@ -5,11 +5,18 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
+    "dev": "nodemon --config nodemon.json src/index.js",
     "test": "jest --watchman=false --runInBand",
     "test:data-values": "jest --watchman=false --runInBand __tests__/dataValues.integration.test.js",
     "test:ci": "jest --watchman=false --runInBand --ci",
     "test:ci:debug": "jest --watchman=false --runInBand --ci --detectOpenHandles"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFiles": [
+      "<rootDir>/jest.setup.js"
+    ],
+    "testTimeout": 15000
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
