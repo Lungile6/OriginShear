@@ -13,15 +13,41 @@ const marketRoutes = require('./routes/market');
 const markRoutes = require('./routes/marks');
 const newsRoutes = require("./routes/news");
 const ipfsRoutes = require("./routes/ipfs");
+const subsidyRoutes = require("./routes/subsidy");
+const disputeRoutes = require("./routes/disputes");
+const oracleRoutes = require("./routes/oracle");
+const reputationRoutes = require("./routes/reputation");
 
 const app = express();
 
 // Security middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
-}));
+
+function resolveCorsOrigin(origin, callback) {
+  const configured = (process.env.FRONTEND_URL || "http://localhost:5173")
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
+
+  // Dev: Vite may hop to 5174/5175 if 5173 is busy; also allow LAN preview hosts.
+  const isLocalVite =
+    typeof origin === "string" &&
+    /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+):(5173|5174|5175)$/.test(
+      origin
+    );
+
+  if (!origin || configured.includes(origin) || isLocalVite) {
+    return callback(null, true);
+  }
+  return callback(new Error(`CORS blocked for origin: ${origin}`));
+}
+
+app.use(
+  cors({
+    origin: resolveCorsOrigin,
+    credentials: true,
+  })
+);
 app.use(compression());
 
 // Body parsing
@@ -65,6 +91,10 @@ app.use('/api/market', marketRoutes);
 app.use('/api/marks', markRoutes);
 app.use("/api/news", newsRoutes);
 app.use("/api/ipfs", ipfsRoutes);
+app.use("/api/subsidy", subsidyRoutes);
+app.use("/api/disputes", disputeRoutes);
+app.use("/api/oracle", oracleRoutes);
+app.use("/api/reputation", reputationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

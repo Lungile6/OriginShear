@@ -184,10 +184,11 @@ contract DisputeResolution is AccessControl, Pausable {
 
     /**
      * @notice Helper to get offer details from FarmerMarket
-     * @dev This is a simplified version - in production, you'd call the actual contract
      */
-    function getOfferDetails(uint256 offerId) 
-        public pure returns (
+    function getOfferDetails(uint256 offerId)
+        public
+        view
+        returns (
             uint256 _offerId,
             uint256 lotId,
             address farmer,
@@ -195,11 +196,29 @@ contract DisputeResolution is AccessControl, Pausable {
             address buyer,
             uint256 escrowAmount,
             uint8 status
-        ) 
+        )
     {
-        // In production, call FarmerMarket.offers(offerId)
-        // For now, return placeholder values
-        return (offerId, 0, address(0), 0, address(0), 0, 0);
+        (_offerId, lotId, farmer, askPriceWei, buyer, escrowAmount) = _offerCore(offerId);
+        status = uint8(_offerStatus(offerId));
+    }
+
+    function _offerCore(uint256 offerId)
+        private
+        view
+        returns (
+            uint256 offerId_,
+            uint256 lotId,
+            address farmer,
+            uint256 askPriceWei,
+            address buyer,
+            uint256 escrowAmount
+        )
+    {
+        (offerId_, lotId, farmer, askPriceWei, buyer, escrowAmount, , , ) = market.offers(offerId);
+    }
+
+    function _offerStatus(uint256 offerId) private view returns (FarmerMarket.OfferStatus status) {
+        (, , , , , , status, , ) = market.offers(offerId);
     }
 
     function _getDispute(uint256 disputeId) internal view returns (Dispute storage) {

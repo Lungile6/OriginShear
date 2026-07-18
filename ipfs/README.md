@@ -1,8 +1,21 @@
 # ORIGINSHEAR IPFS Integration
 
-IPFS integration for storing wool and mohair lot metadata, photos, and documents for ORIGINSHEAR.
+IPFS helpers for storing wool and mohair lot metadata, photos, and documents.
 
-## Features
+**Day-to-day app usage:** the running frontend uploads lot metadata through the
+API (`POST /api/ipfs/lot-metadata`). Configure IPFS in **`api/.env`** (see
+`api/.env.example` and `api/README.md`). You usually do **not** need to run
+this `ipfs/` package separately for local demos.
+
+For local development without Pinata/Infura, set on the API:
+
+```env
+IPFS_DEV_FALLBACK=true
+```
+
+Metadata is then stored under `api/data/ipfs-dev/` and returned as a usable URI.
+
+## Features (this package)
 
 - Upload metadata to IPFS
 - Upload files (photos, documents)
@@ -11,7 +24,7 @@ IPFS integration for storing wool and mohair lot metadata, photos, and documents
 - Batch upload for lots with photos
 - Wool and mohair farmer profile with documents
 
-## Setup
+## Setup (standalone helpers)
 
 ```bash
 cd ipfs
@@ -26,6 +39,12 @@ cp .env.example .env
 - `INFURA_PROJECT_ID`: Infura project ID
 - `INFURA_PROJECT_SECRET`: Infura project secret
 - `IPFS_GATEWAY`: Public gateway URL (default: ipfs.io)
+
+For the **API** (recommended path), also see:
+
+- `PINATA_JWT` / `IPFS_GATEWAY` (Pinata)
+- `INFURA_JWT_KEY_ID` + private key path (Infura JWT)
+- `IPFS_DEV_FALLBACK=true` (local fallback)
 
 ## Usage
 
@@ -66,6 +85,9 @@ registerLot(
     "ipfs://QmXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx" // IPFS CID
 );
 ```
+
+In the app, the Register Lot review step calls the API first, then submits
+`registerLot` with the returned URI.
 
 ## Storage Structure
 
@@ -116,3 +138,9 @@ For production, use a pinning service to ensure content persistence:
 - Public: https://ipfs.io/ipfs
 - Infura: https://infura-ipfs.io/ipfs
 - Cloudflare: https://cloudflare-ipfs.com/ipfs
+- Pinata: https://gateway.pinata.cloud/ipfs
+
+## Related docs
+
+- App runbook: [`../README.md`](../README.md)
+- API IPFS routes: [`../api/README.md`](../api/README.md)

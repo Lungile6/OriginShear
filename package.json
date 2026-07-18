@@ -25,6 +25,8 @@
     "sync:subgraph": "node scripts/sync-subgraph.js",
     "subgraph:build": "npm --prefix subgraph run codegen && npm --prefix subgraph run build",
     "subgraph:deploy": "npm run sync:subgraph celoSepolia && npm run subgraph:build && npm --prefix subgraph exec graph deploy --studio origin-shear --version-label",
-    "seed:farmer": "NODE_PATH=./api/node_modules node scripts/seed-demo.js"
+    "seed:farmer": "NODE_PATH=./api/node_modules node scripts/seed-demo.js",
+    "seed:roles": "NODE_PATH=./api/node_modules node scripts/seed-demo.js",
+    "seed:advanced": "NODE_PATH=./api/node_modules SEED_ADVANCED_ONLY=true node scripts/seed-demo.js --advanced"
   }
 }

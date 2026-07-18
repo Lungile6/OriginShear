@@ -8,6 +8,7 @@ import PageHeader from "../../components/ui/PageHeader";
 import Card from "../../components/ui/Card";
 import Icon from "../../components/ui/Icon";
 import { LotCardSkeleton } from "../../components/ui/Skeleton";
+import SubmitReviewPanel from "../../components/market/SubmitReviewPanel";
 
 export default function BuyerPurchaseHistory() {
   const { address } = useAccount();
@@ -61,28 +62,31 @@ export default function BuyerPurchaseHistory() {
           {purchases.map((p) => {
             const grossWei = BigInt(p.netAmount || 0n) + BigInt(p.fee || 0n);
             return (
-              <Link
-                key={p.offerId.toString()}
-                to={`/buyer/lots/${p.lotId.toString()}`}
-                className="p-4 flex justify-between items-center active:bg-surface-container"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="bg-surface-container p-2 rounded-lg text-role-buyer">
-                    <Icon name="receipt_long" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-body-lg">Lot #{p.lotId.toString()}</p>
-                    <p className="text-label-sm text-on-surface-variant">Farmer: {shorten(p.farmer)}</p>
-                    <p className="text-[10px] text-on-surface-variant mt-1">
-                      Net: {formatCUSD(p.netAmount)} · Fee: {formatCUSD(p.fee)} cUSD
-                    </p>
+              <div key={p.offerId.toString()} className="p-4">
+                <div className="flex justify-between items-center">
+                  <Link
+                    to={`/buyer/lots/${p.lotId.toString()}`}
+                    className="flex items-center gap-3 flex-1 active:opacity-80"
+                  >
+                    <div className="bg-surface-container p-2 rounded-lg text-role-buyer">
+                      <Icon name="receipt_long" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-body-lg">Lot #{p.lotId.toString()}</p>
+                      <p className="text-label-sm text-on-surface-variant">Farmer: {shorten(p.farmer)}</p>
+                      <p className="text-[10px] text-on-surface-variant mt-1">
+                        Gross paid: {formatCUSD(grossWei)} · Farmer net: {formatCUSD(p.netAmount)} · Fee:{" "}
+                        {formatCUSD(p.fee)} cUSD
+                      </p>
+                    </div>
+                  </Link>
+                  <div className="text-right shrink-0 ml-3">
+                    <p className="font-bold text-primary">-{formatCUSD(grossWei)} cUSD</p>
+                    <p className="text-[10px] text-on-surface-variant">≈ {cusdToLSL(grossWei)} LSL</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-primary">-{formatCUSD(grossWei)} cUSD</p>
-                  <p className="text-[10px] text-on-surface-variant">≈ {cusdToLSL(grossWei)} LSL</p>
-                </div>
-              </Link>
+                <SubmitReviewPanel offerId={p.offerId} farmerAddress={p.farmer} />
+              </div>
             );
           })}
         </Card>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useChainId, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useAccount, useChainId, useSignMessage, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { useRegisterLot } from "./RegisterLotContext";
 import AppLayout from "../../layouts/AppLayout";
 import LotStepper from "../../components/ui/LotStepper";
@@ -11,10 +11,13 @@ import { HARVEST_LEDGER_ABI, FibreTypeLabel, GradeLabel } from "../../contracts/
 import { getContractAddresses } from "../../contracts/addresses";
 import { kgToGrams } from "../../lib/utils";
 import { apiClient } from "../../lib/apiClient";
+import { ensureApiSession } from "../../lib/apiAuth";
 
 export default function RegisterLotReview() {
   const navigate = useNavigate();
   const { form } = useRegisterLot();
+  const { address } = useAccount();
+  const { signMessageAsync } = useSignMessage();
   const chainId = useChainId();
   const addresses = getContractAddresses(chainId);
 
@@ -31,16 +34,37 @@ export default function RegisterLotReview() {
 
   async function handleSign() {
     if (!addresses) return;
+    if (!address) {
+      setIpfsError("Connect your farmer wallet in MetaMask first.");
+      return;
+    }
+
+    const weightKg = Number(form.weightKg);
+    const weightGrams = kgToGrams(form.weightKg);
+    if (!Number.isFinite(weightKg) || weightKg <= 0 || weightGrams < 1) {
+      setIpfsError("Enter a valid lot weight greater than 0 kg, then try again.");
+      return;
+    }
+    if (weightGrams > 4_000_000) {
+      setIpfsError("Lot weight cannot exceed 4,000 kg.");
+      return;
+    }
+    if (!form.gpsZone?.trim() || !form.seasonYear?.trim()) {
+      setIpfsError("GPS zone and season are required. Go back to step 1 and complete the form.");
+      return;
+    }
+
     setIpfsError("");
 
     try {
       setIsUploadingMetadata(true);
+      await ensureApiSession(address, signMessageAsync);
       const ipfsPayload = {
-        fibreType: String(form.fibreType),
-        grade: String(form.grade),
-        weightGrams: kgToGrams(form.weightKg).toString(),
-        gpsZone: form.gpsZone,
-        seasonYear: form.seasonYear,
+        fibreType: String(form.fibreType ?? 0),
+        grade: String(form.grade ?? 0),
+        weightGrams: String(weightGrams),
+        gpsZone: form.gpsZone.trim(),
+        seasonYear: form.seasonYear.trim(),
         storageMethod: form.storageMethod,
         handlingNotes: form.handlingNotes,
         readyForPickup: form.readyForPickup,
@@ -56,11 +80,11 @@ export default function RegisterLotReview() {
         abi: HARVEST_LEDGER_ABI,
         functionName: "registerLot",
         args: [
-          form.fibreType,
-          form.grade,
-          kgToGrams(form.weightKg),
-          form.gpsZone,
-          form.seasonYear,
+          Number(form.fibreType ?? 0),
+          Number(form.grade ?? 0),
+          weightGrams,
+          form.gpsZone.trim(),
+          form.seasonYear.trim(),
           metadataURI,
         ],
       });

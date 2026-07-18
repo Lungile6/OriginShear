@@ -1,0 +1,16 @@
+{
+  "network": "celoSepolia",
+  "deployer": "0x4b8eEDd24270579A8D61a7F4Eaa0cf05b3Aa7672",
+  "cUSD": "0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b",
+  "HarvestLedger": "0xCdC66542C3a63e9Ac831cba393BcABc3B2aE6068",
+  "FarmerMarket": "0x67D273a76F3998d6b4eFf461Dbb508F1A6654FB8",
+  "ProofOfOriginVerifier": "0x1fC854Cb2D737363473Ce51844daa48220774899",
+  "IndustryMarkRegistry": "0xcac97CBa1D7685dd3B9A976Ca10fEb715BD43a57",
+  "NewsBulletin": "0x2dBf9b14246f571e0487345870dEF0E0Ab6Fb6d7",
+  "GasSubsidyPool": "0xb0B3699774b5a3ad8a94628455c0268a66d75FfC",
+  "DisputeResolution": "0xb235008e74a337D62337E87Be956fF0F15809f44",
+  "ReputationSystem": "0xF3b20B3572097fDcbE5AB1D66a717396e03B9d18",
+  "PriceOracle": "0x841B4FFD60948dC8651446610253B64E9D3e3939",
+  "MultiSigTreasury": "0x40D1c8bB36b704050b8d2498da9D4566D1374a21",
+  "timestamp": "2026-07-18T19:52:16.199Z"
+}

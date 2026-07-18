@@ -24,6 +24,9 @@ describe("On-chain role authorization", () => {
     process.env.JWT_SECRET = "test-secret";
     process.env.JWT_EXPIRES_IN = "1h";
     process.env.AUTH_CHALLENGE_TTL_SECONDS = "120";
+    // Must stay off so mocked role denials return 403 instead of hitting chain.
+    process.env.DEV_BYPASS_ROLE_GUARDS = "false";
+    process.env.ENABLE_ONCHAIN_ROLE_RESOLUTION = "false";
 
     jest.doMock("../src/lib/onchainRoles", () => ({
       walletHasValidatorRole: jest.fn(async () => false),

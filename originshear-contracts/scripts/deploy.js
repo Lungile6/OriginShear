@@ -5,7 +5,9 @@ const { ethers } = hre;
 
 const TOKEN_ADDRESSES = {
   sepolia: "0x71660c4005BA85c37ccec55d0C4493E66Fe775d3",
-  celoSepolia: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1",
+  // Celo Sepolia Mento Dollar (cUSD) — NOT the Alfajores address
+  // https://docs.celo.org/tooling/contracts/token-contracts
+  celoSepolia: "0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b",
   alfajores: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1",
   celo: "0x765DE816845861e75A25fCA122bb6898B8B1282a",
 };

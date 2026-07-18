@@ -28,6 +28,8 @@ const root = path.join(__dirname, "..");
 const deploymentFile = path.join(root, "originshear-contracts", `deployments.${network}.json`);
 const envExample = path.join(root, "originshear-frontend", ".env.example");
 const envFile = path.join(root, "originshear-frontend", ".env");
+const apiEnvExample = path.join(root, "api", ".env.example");
+const apiEnvFile = path.join(root, "api", ".env");
 
 if (!fs.existsSync(deploymentFile)) {
   console.error(`Missing ${deploymentFile}. Deploy contracts first.`);
@@ -36,7 +38,7 @@ if (!fs.existsSync(deploymentFile)) {
 
 const deployment = JSON.parse(fs.readFileSync(deploymentFile, "utf8"));
 
-const updates = {
+const frontendUpdates = {
   [`${prefix}_HARVEST_LEDGER`]: deployment.HarvestLedger,
   [`${prefix}_FARMER_MARKET`]: deployment.FarmerMarket,
   [`${prefix}_VERIFIER`]: deployment.ProofOfOriginVerifier,
@@ -50,34 +52,59 @@ const updates = {
 };
 
 if (prefix === "VITE_LOCAL") {
-  updates.VITE_LOCAL_MOCK_CUSD = deployment.cUSD;
+  frontendUpdates.VITE_LOCAL_MOCK_CUSD = deployment.cUSD;
 }
 
-const baseEnv = fs.existsSync(envFile)
-  ? fs.readFileSync(envFile, "utf8")
-  : fs.existsSync(envExample)
-    ? fs.readFileSync(envExample, "utf8")
-    : "";
+const apiUpdates =
+  network === "celoSepolia" || network === "localhost" || network === "hardhat"
+    ? {
+        HARVEST_LEDGER_ADDRESS: deployment.HarvestLedger,
+        FARMER_MARKET_ADDRESS: deployment.FarmerMarket,
+        PROOF_OF_ORIGIN_VERIFIER_ADDRESS: deployment.ProofOfOriginVerifier,
+        INDUSTRY_MARK_REGISTRY_ADDRESS: deployment.IndustryMarkRegistry,
+        NEWS_BULLETIN_ADDRESS: deployment.NewsBulletin,
+        GAS_SUBSIDY_POOL_ADDRESS: deployment.GasSubsidyPool,
+        DISPUTE_RESOLUTION_ADDRESS: deployment.DisputeResolution,
+        REPUTATION_SYSTEM_ADDRESS: deployment.ReputationSystem,
+        PRICE_ORACLE_ADDRESS: deployment.PriceOracle,
+        MULTI_SIG_TREASURY_ADDRESS: deployment.MultiSigTreasury,
+      }
+    : null;
 
-const envLines = baseEnv.split("\n");
-const seen = new Set();
+function mergeEnvFile(targetFile, exampleFile, updates) {
+  const baseEnv = fs.existsSync(targetFile)
+    ? fs.readFileSync(targetFile, "utf8")
+    : fs.existsSync(exampleFile)
+      ? fs.readFileSync(exampleFile, "utf8")
+      : "";
 
-const merged = envLines.map((line) => {
-  const match = line.match(/^([A-Z0-9_]+)=/);
-  if (!match) return line;
-  const key = match[1];
-  if (updates[key] !== undefined) {
-    seen.add(key);
-    return `${key}=${updates[key]}`;
+  const envLines = baseEnv.split("\n");
+  const seen = new Set();
+
+  const merged = envLines.map((line) => {
+    const match = line.match(/^([A-Z0-9_]+)=/);
+    if (!match) return line;
+    const key = match[1];
+    if (updates[key] !== undefined && updates[key] != null) {
+      seen.add(key);
+      return `${key}=${updates[key]}`;
+    }
+    return line;
+  });
+
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null) continue;
+    if (!seen.has(key)) {
+      merged.push(`${key}=${value}`);
+    }
   }
-  return line;
-});
 
-for (const [key, value] of Object.entries(updates)) {
-  if (!seen.has(key)) {
-    merged.push(`${key}=${value}`);
-  }
+  fs.writeFileSync(targetFile, merged.join("\n").replace(/\n?$/, "\n"));
+  console.log(`Updated ${targetFile} from ${deploymentFile}`);
 }
 
-fs.writeFileSync(envFile, merged.join("\n").replace(/\n?$/, "\n"));
-console.log(`Updated ${envFile} from ${deploymentFile}`);
+mergeEnvFile(envFile, envExample, frontendUpdates);
+
+if (apiUpdates) {
+  mergeEnvFile(apiEnvFile, apiEnvExample, apiUpdates);
+}

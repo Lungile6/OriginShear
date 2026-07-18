@@ -45,6 +45,9 @@ contract MultiSigTreasury is AccessControl, Pausable {
     mapping(address => uint256[]) private _proposedTransactions;
     mapping(address => uint256[]) private _signedTransactions;
 
+    address[] private _signers;
+    mapping(address => bool) private _isSignerListed;
+
     IERC20 public immutable cUSD;
 
     event TransactionProposed(uint256 indexed transactionId, TransactionType txType, address indexed proposedBy);
@@ -72,12 +75,11 @@ contract MultiSigTreasury is AccessControl, Pausable {
         executionDelay = 1 hours; // Default: 1 hour delay
         
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
-        _grantRole(SIGNER_ROLE, admin);
+        _addSigner(admin);
         
         // Add initial signers
         for (uint256 i = 0; i < initialSigners.length; i++) {
-            _grantRole(SIGNER_ROLE, initialSigners[i]);
-            emit SignerAdded(initialSigners[i]);
+            _addSigner(initialSigners[i]);
         }
     }
 
@@ -223,8 +225,8 @@ contract MultiSigTreasury is AccessControl, Pausable {
      * @dev Admin-only.
      */
     function addSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _grantRole(SIGNER_ROLE, signer);
-        emit SignerAdded(signer);
+        if (signer == address(0)) revert InvalidAddress(signer);
+        _addSigner(signer);
     }
 
     /**
@@ -232,8 +234,8 @@ contract MultiSigTreasury is AccessControl, Pausable {
      * @dev Admin-only.
      */
     function removeSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _revokeRole(SIGNER_ROLE, signer);
-        emit SignerRemoved(signer);
+        if (signer == address(0)) revert InvalidAddress(signer);
+        _removeSigner(signer);
     }
 
     /**
@@ -290,11 +292,7 @@ contract MultiSigTreasury is AccessControl, Pausable {
      * @notice Get all signers
      */
     function getSigners() external view returns (address[] memory) {
-        // Simplified: return array of known signers
-        // In production, maintain a separate array of signers
-        address[] memory signers = new address[](1);
-        signers[0] = msg.sender; // Placeholder
-        return signers;
+        return _signers;
     }
 
     function _getTransaction(uint256 transactionId) internal view returns (Transaction storage) {
@@ -302,12 +300,46 @@ contract MultiSigTreasury is AccessControl, Pausable {
         return transactions[transactionId];
     }
 
+    function _addSigner(address signer) internal {
+        if (_isSignerListed[signer]) {
+            if (!hasRole(SIGNER_ROLE, signer)) {
+                _grantRole(SIGNER_ROLE, signer);
+            }
+            return;
+        }
+        _isSignerListed[signer] = true;
+        _signers.push(signer);
+        _grantRole(SIGNER_ROLE, signer);
+        emit SignerAdded(signer);
+    }
+
+    function _removeSigner(address signer) internal {
+        if (!_isSignerListed[signer]) {
+            if (hasRole(SIGNER_ROLE, signer)) {
+                _revokeRole(SIGNER_ROLE, signer);
+            }
+            return;
+        }
+        _isSignerListed[signer] = false;
+        _revokeRole(SIGNER_ROLE, signer);
+
+        uint256 len = _signers.length;
+        for (uint256 i = 0; i < len; i++) {
+            if (_signers[i] == signer) {
+                _signers[i] = _signers[len - 1];
+                _signers.pop();
+                break;
+            }
+        }
+        emit SignerRemoved(signer);
+    }
+
     function _countSignatures(uint256 transactionId) internal view returns (uint256) {
         uint256 count = 0;
-        // Simplified: count signatures from known signers
-        // In production, iterate through actual role members
-        if (signatures[transactionId][msg.sender]) {
-            count++;
+        for (uint256 i = 0; i < _signers.length; i++) {
+            if (signatures[transactionId][_signers[i]]) {
+                count++;
+            }
         }
         return count;
     }

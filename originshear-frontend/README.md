@@ -1,21 +1,20 @@
 # ORIGINSHEAR Frontend
 
 React + Vite + Tailwind CSS v4 frontend for ORIGINSHEAR — a proof-of-origin
-and marketplace platform for Lesotho wool and mohair farmers — wired to the live
-HarvestLedger, FarmerMarket, and ProofOfOriginVerifier contracts via
-[wagmi](https://wagmi.sh) + [viem](https://viem.sh).
+and marketplace platform for Lesotho wool and mohair farmers — wired to live
+Celo Sepolia contracts via [wagmi](https://wagmi.sh) + [viem](https://viem.sh)
+and the ORIGINSHEAR API for auth, IPFS, subgraph reads, marks, and news.
 
-Translated from the Stitch design export (24 screens across wool & mohair farmer,
-validator, government, and public/buyer flows) into a single routed
-React app with real on-chain reads/writes — no mock data on any
-authenticated screen.
+Translated from the Stitch design export (farmer, validator, government, and
+public/buyer flows) into a single routed React app with real on-chain
+reads/writes on authenticated screens.
 
 ## Stack
 
 | Layer | Technology |
 |---|---|
 | Framework | React 19 + Vite 8 |
-| Styling | Tailwind CSS v4 (via `@tailwindcss/vite`, no PostCSS config needed) |
+| Styling | Tailwind CSS v4 (via `@tailwindcss/vite`) |
 | Routing | React Router v7 |
 | Web3 | wagmi v3 + viem v2 |
 | Server state | TanStack Query v5 (used internally by wagmi) |
@@ -25,90 +24,109 @@ authenticated screen.
 
 ```
 src/
-├── contracts/          # ABIs + addresses for HarvestLedger, FarmerMarket, ProofOfOriginVerifier
-├── lib/                 # wagmiConfig.js, utils.js (formatting, Proof of Origin hashing)
-├── context/             # RoleContext — resolves connected wallet's on-chain role(s)
+├── contracts/          # ABIs + addresses (ledger, market, verifier, marks,
+│                       # subsidy, dispute, reputation, price oracle)
+├── lib/                # wagmiConfig, apiClient, apiAuth, utils, support
+├── context/            # RoleContext — on-chain role resolution
 ├── components/
-│   ├── ui/               # Button, Card, StatusChip, BilingualText
-│   ├── nav/               # TopAppBar, BottomNav (role-aware tabs)
-│   └── RequireRole.jsx    # route guard
+│   ├── ui/             # Button, Card, StatusChip, BilingualText, …
+│   ├── nav/            # TopAppBar, BottomNav
+│   ├── market/         # OpenDisputePanel, SubmitReviewPanel
+│   ├── farmer/         # GasSubsidyClaim, IndustryMarksRail
+│   └── lot/            # LotVerificationPanel
 ├── layouts/
-│   └── AppLayout.jsx      # shared chrome for authenticated screens
-├── hooks/                # useFarmerLots, useLotQueue, useCusdBalance
+│   └── AppLayout.jsx
+├── hooks/              # useFarmerLots, useLotQueue, usePaymentHistory, …
 └── pages/
-    ├── auth/               # Splash, WalletConnect, RoleSelectionGate, error states, onboarding
-    ├── farmer/              # Dashboard, Register Lot (3-step), My Lots, QR Proof, Market
-    ├── validator/           # Pending Queue, Audit Log
-    ├── government/          # Mark Management Dashboard, News Hub
-    └── public/              # Landing Page, Public Lot Verification, 404
+    ├── auth/           # Splash, WalletConnect, RoleSelectionGate, onboarding
+    ├── farmer/         # Dashboard, Register Lot, My Lots, QR, Market
+    ├── validator/      # Queue, Release, Audit
+    ├── government/     # Marks dashboard, News hub/compose
+    ├── buyer/          # Marketplace, purchase, history, verify
+    └── public/         # Landing, PublicLotVerification, 404
 ```
 
-## Setup
+## Setup (from repo root)
+
+Prefer configuring from the **OriginShear** monorepo root so addresses stay in sync:
 
 ```bash
+cd OriginShear
 npm install
-cp .env.example .env
-```
-
-Fill in `.env` with your deployed contract addresses. From the repo root,
-after deploying contracts, run:
-
-```bash
+cp originshear-frontend/.env.example originshear-frontend/.env
 npm run sync:addresses celoSepolia
 ```
 
-Or paste values manually from `originshear-contracts/deployments.<network>.json`:
-
-```
-VITE_CELO_SEPOLIA_HARVEST_LEDGER=0x...
-VITE_CELO_SEPOLIA_FARMER_MARKET=0x...
-VITE_CELO_SEPOLIA_VERIFIER=0x...
-```
+Or from this package only:
 
 ```bash
-npm run dev      # local dev server
-npm run build    # production build to dist/
-npm run lint     # ESLint
+cd originshear-frontend
+npm install
+cp .env.example .env
+# Paste VITE_CELO_SEPOLIA_* from ../originshear-contracts/deployments.celoSepolia.json
 ```
 
-## How each screen maps to the contracts
+### Frontend `.env` keys
 
-| Screen | Contract call |
+| Variable | Purpose |
+|----------|---------|
+| `VITE_API_BASE_URL` | API origin (default `http://localhost:3000`) |
+| `VITE_CELO_SEPOLIA_RPC_URL` | RPC for wagmi |
+| `VITE_CELO_SEPOLIA_HARVEST_LEDGER` etc. | Contract addresses (use sync) |
+| `VITE_DEV_BYPASS_ROLE_GUARDS` | `true` unlocks all role routes locally |
+| `VITE_WALLETCONNECT_PROJECT_ID` | Optional WalletConnect for mobile Valora |
+| `VITE_IPFS_GATEWAY` | Gateway for `ipfs://` links |
+
+```bash
+npm run dev      # http://localhost:5173
+npm run build    # production → dist/
+npm run lint
+```
+
+Start the API as well (`cd api && npm run dev`) before testing register-lot IPFS or marketplace lists.
+
+## Wallet & role selection
+
+1. MetaMask (or Valora) must be on **Celo Sepolia** (`11142220`).
+2. Select the **account** that holds the role you want (farmer / validator / government).
+3. Open the app → **Connect Wallet** → choose the matching role card.
+4. Buyer needs no on-chain role; fund with Sepolia **Mento cUSD**  
+   `0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b`.
+
+Roles are resolved on-chain (`RoleContext`). Wrong account → onboarding / pending screens.  
+Grant roles from the repo root with `npm run seed:roles` (see root `README.md`).
+
+Public verification (no wallet): `/verify` and `/verify/lot/:lotId`.
+
+## How screens map to contracts / API
+
+| Screen | Call / data source |
 |---|---|
-| Role Selection Gate | `hasRole(FARMER_ROLE / VALIDATOR_ROLE / DEFAULT_ADMIN_ROLE, address)` |
-| Register Lot (steps 1–3) | `HarvestLedger.registerLot(...)` |
-| My Lots | `HarvestLedger.getFarmerLots()` → `getLot()` per ID |
-| QR Proof of Origin | reads `lot.proofOfOrigin`, encodes a verification URL into a QR |
-| Validator Queue | `HarvestLedger.totalLots()` → `getLot()` per ID, filtered to `PENDING` → `validateLot(id, approve)` |
-| Validator Audit Log | same enumeration, filtered to `VALIDATED`/`REJECTED` |
-| Sell Your Lot | `FarmerMarket.listLot()` → `purchaseLot()` (buyer-side) → `releasePayment()` |
-| Public Lot Verification | `ProofOfOriginVerifier.verify(lotId, proofHash)` — free `eth_call`, no wallet needed |
+| Role Selection Gate | `hasRole` on HarvestLedger / IndustryMarkRegistry |
+| Register Lot | `POST /api/ipfs/lot-metadata` → `HarvestLedger.registerLot` |
+| My Lots / Dashboard | farmer lots (chain/API) + payment history (API) |
+| QR Proof of Origin | `lot.proofOfOrigin` → verification URL QR |
+| Validator Queue | pending lots → `validateLot` (wallet or API relayer) |
+| Escrow Release | `POST /api/market/offers/:id/release` (validator + relayer) |
+| Sell Your Lot | `FarmerMarket.listLot` + PriceOracle suggestion |
+| Buyer purchase | cUSD `approve` + `purchaseLot` |
+| Dispute (escrow) | `DisputeResolution.openDispute` (wallet-direct) |
+| Gas subsidy | `GasSubsidyPool.claimSubsidy` (wallet-direct) |
+| Reviews | `ReputationSystem.submitReview` after purchase |
+| Marks / News | `/api/marks`, `/api/news` → on-chain registries |
+| Public / Buyer Verify | `ProofOfOriginVerifier.verify` (`eth_call`) |
 
-## Notes on scope and known gaps
+## Notes on scope
 
-- **IPFS metadata**: The Register Lot review step now uploads lot metadata through `POST /api/ipfs/lot-metadata`, then passes the returned `metadataURI` into `HarvestLedger.registerLot`. Configure `VITE_API_BASE_URL` and optional `VITE_IPFS_GATEWAY` in `.env`.
-- **`totalLots()` getter**: `HarvestLedger.sol` was given a small additive
-  change — a public `totalLots()` view function — so the Validator Queue
-  and Audit Log can enumerate all lots without an indexer. This is
-  backward-compatible and doesn't change any existing function signatures,
-  but **you must redeploy the contract** (or upgrade, if proxied) for the
-  validator screens to work. At pilot scale (dozens–low hundreds of lots
-  per season) this scan-all approach is fine; swap for an indexer/subgraph
-  if lot volume grows significantly.
-- **Government Mark Management** screens are built against real
-  `HarvestLedger` data for the lot-status donut/counts, but the "Issue a
-  Mark" form uses local component state — there's no on-chain Industry
-  Mark registry contract yet (ear tag / branding / tattoo certification
-  with expiry). Wire this up once that contract exists.
-- **News Hub** (Government bulletins) is local state for the same reason
-  — no on-chain or backend news store yet. Swap `useState` for a real
-  data source (contract, IPFS, or a small backend) when ready.
-- **Payment History** on the Farmer Market screen shows the gross ask
-  price rather than the net amount after the 2% platform fee, since
-  `FarmerMarket.offers()` doesn't store the net amount directly (it's only
-  emitted in the `PaymentReleased` event). For exact net amounts, index
-  `PaymentReleased` events rather than reading offer state.
-- **Wallet support**: the injected connector covers MetaMask and Valora's
-  in-app browser. WalletConnect (for Valora as a separate mobile app, not
-  in-app browser) isn't wired up — add `@wagmi/connectors`'s
-  `walletConnect()` connector with a project ID if you need that flow.
+- **IPFS metadata**: Register Lot review uploads via `POST /api/ipfs/lot-metadata`, then passes `metadataURI` into `registerLot`. Configure `VITE_API_BASE_URL`.
+- **Government marks & news**: wired to API + `IndustryMarkRegistry` / `NewsBulletin` (not local-only state).
+- **Payment history**: net amounts / fees from `PaymentReleased` via API/subgraph; active offers show ask + estimated 98% net.
+- **Advanced features**: subsidy claim, disputes, oracle suggestions, and reviews are in the UI against current Sepolia deployments (correct Mento cUSD).
+- **Wallets**: injected MetaMask / Valora in-app browser; WalletConnect when `VITE_WALLETCONNECT_PROJECT_ID` is set.
+- **Subgraph lag**: marketplace browse depends on `GRAPHQL_ENDPOINT` on the API; empty lists usually mean subgraph not synced to current addresses.
+
+## Related docs
+
+- End-to-end install, seed roles, and submission guide: root [`../README.md`](../README.md)
+- Contracts: [`../originshear-contracts/README.md`](../originshear-contracts/README.md)
+- API: [`../api/README.md`](../api/README.md)

@@ -7,10 +7,12 @@ function resolveCallerWallet(req) {
   return wallet;
 }
 
-const DEV_BYPASS_ROLE_GUARDS = process.env.DEV_BYPASS_ROLE_GUARDS === "true";
+function isDevBypassEnabled() {
+  return process.env.DEV_BYPASS_ROLE_GUARDS === "true";
+}
 
 async function requireValidatorRole(req, res, next) {
-  if (DEV_BYPASS_ROLE_GUARDS) return next();
+  if (isDevBypassEnabled()) return next();
 
   try {
     const wallet = resolveCallerWallet(req);
@@ -29,7 +31,7 @@ async function requireValidatorRole(req, res, next) {
 }
 
 async function requireGovernmentRole(req, res, next) {
-  if (DEV_BYPASS_ROLE_GUARDS) return next();
+  if (isDevBypassEnabled()) return next();
 
   try {
     const wallet = resolveCallerWallet(req);

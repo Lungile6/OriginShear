@@ -7,6 +7,7 @@ import BottomNav from "./components/nav/BottomNav";
 
 const LandingPage = lazy(() => import("./pages/public/LandingPage"));
 const NotFound = lazy(() => import("./pages/public/NotFound"));
+const PublicLotVerification = lazy(() => import("./pages/public/PublicLotVerification"));
 
 const Splash = lazy(() => import("./pages/auth/Splash"));
 const WalletConnect = lazy(() => import("./pages/auth/WalletConnect"));
@@ -69,7 +70,7 @@ function GlobalBottomNavigation() {
 function LegacyVerifyLotRedirect() {
   const { lotId } = useParams();
   const { search } = useLocation();
-  return <Navigate to={`/buyer/verify/lot/${lotId}${search}`} replace />;
+  return <Navigate to={`/verify/lot/${lotId}${search}`} replace />;
 }
 
 function PageLoader() {
@@ -90,8 +91,10 @@ export default function App() {
         {/* Public */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/news" element={<GovernmentNewsHub />} />
-        <Route path="/verify" element={<Navigate to="/buyer/verify" replace />} />
-        <Route path="/verify/lot/:lotId" element={<LegacyVerifyLotRedirect />} />
+        <Route path="/verify" element={<PublicLotVerification />} />
+        <Route path="/verify/lot/:lotId" element={<PublicLotVerification />} />
+        <Route path="/public/verify" element={<Navigate to="/verify" replace />} />
+        <Route path="/public/verify/lot/:lotId" element={<LegacyVerifyLotRedirect />} />
 
         {/* Auth */}
         <Route path="/splash" element={<Splash />} />

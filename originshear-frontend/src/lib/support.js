@@ -49,3 +49,11 @@ export function mailtoAdmin(address) {
   );
   return `mailto:${SUPPORT.adminEmail}?subject=${subject}&body=${body}`;
 }
+
+export function mailtoValidator(address) {
+  const subject = encodeURIComponent("ORIGINSHEAR Validator Access Request");
+  const body = encodeURIComponent(
+    `Please grant VALIDATOR_ROLE to my wallet:\n\n${address}\n\nThank you.`
+  );
+  return `mailto:${SUPPORT.adminEmail}?subject=${subject}&body=${body}`;
+}
