@@ -35,7 +35,8 @@ contract GasSubsidyPool is AccessControl, Pausable {
     uint256 public maxDailyClaim; // Maximum cUSD a farmer can claim per day
     uint256 public currentBalance;
 
-    mapping(address => uint256) public dailyClaimed;
+    mapping(address => uint256) public lastClaimDay;
+    mapping(address => uint256) public claimedToday;
     mapping(uint256 => SubsidyClaim) public claims;
     mapping(address => uint256[]) private _farmerClaims;
 
@@ -80,13 +81,15 @@ contract GasSubsidyPool is AccessControl, Pausable {
         if (amount == 0) revert ZeroAmount();
         if (amount > currentBalance) revert InsufficientBalance();
         
-        // Check daily limit
         uint256 day = block.timestamp / 1 days;
-        uint256 lastClaimDay = dailyClaimed[msg.sender] / 1e18;
-        uint256 lastClaimAmount = dailyClaimed[msg.sender] % 1e18;
-        
-        if (lastClaimDay == day && (lastClaimAmount + amount) > maxDailyClaim) {
-            revert DailyLimitExceeded(lastClaimAmount + amount, maxDailyClaim);
+        if (lastClaimDay[msg.sender] != day) {
+            lastClaimDay[msg.sender] = day;
+            claimedToday[msg.sender] = 0;
+        }
+
+        uint256 nextClaimed = claimedToday[msg.sender] + amount;
+        if (nextClaimed > maxDailyClaim) {
+            revert DailyLimitExceeded(nextClaimed, maxDailyClaim);
         }
         
         claimId = ++_claimCounter;
@@ -104,13 +107,7 @@ contract GasSubsidyPool is AccessControl, Pausable {
         require(success, "Transfer failed");
         
         currentBalance -= amount;
-        
-        // Update daily tracking
-        if (lastClaimDay == day) {
-            dailyClaimed[msg.sender] = day * 1e18 + (lastClaimAmount + amount);
-        } else {
-            dailyClaimed[msg.sender] = day * 1e18 + amount;
-        }
+        claimedToday[msg.sender] = nextClaimed;
         
         emit SubsidyClaimed(claimId, msg.sender, amount);
     }
@@ -160,14 +157,12 @@ contract GasSubsidyPool is AccessControl, Pausable {
      */
     function availableClaim(address farmer) external view returns (uint256) {
         uint256 day = block.timestamp / 1 days;
-        uint256 lastClaimDay = dailyClaimed[farmer] / 1e18;
-        uint256 lastClaimAmount = dailyClaimed[farmer] % 1e18;
-        
-        if (lastClaimDay != day) {
+        if (lastClaimDay[farmer] != day) {
             return maxDailyClaim;
         }
-        
-        return maxDailyClaim > lastClaimAmount ? maxDailyClaim - lastClaimAmount : 0;
+        return maxDailyClaim > claimedToday[farmer]
+            ? maxDailyClaim - claimedToday[farmer]
+            : 0;
     }
 
     function pause() external onlyRole(DEFAULT_ADMIN_ROLE) { _pause(); }

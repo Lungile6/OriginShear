@@ -16,6 +16,7 @@ import BilingualText from "../../components/ui/BilingualText";
 import Card from "../../components/ui/Card";
 import Icon from "../../components/ui/Icon";
 import IndustryMarksRail from "../../components/farmer/IndustryMarksRail";
+import GasSubsidyClaim from "../../components/farmer/GasSubsidyClaim";
 import { LotCardSkeleton, StatRailSkeleton } from "../../components/ui/Skeleton";
 
 export default function FarmerDashboard() {
@@ -168,6 +169,8 @@ export default function FarmerDashboard() {
       </section>
 
       <IndustryMarksRail farmerAddress={address} />
+
+      <GasSubsidyClaim />
 
       <section className="px-margin-mobile mt-stack-lg pb-4">
         <div className="flex justify-between items-center mb-stack-sm">

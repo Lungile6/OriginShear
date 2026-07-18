@@ -212,13 +212,15 @@ const treasury = await MultiSigTreasury.deploy(cUSDAddress, adminWallet, [signer
 ```
 
 ### 2. Update Frontend Integration
-- Update GovernmentDashboard.jsx to use IndustryMarkRegistry
-- Update GovernmentNewsHub.jsx to use NewsBulletin
-- Add subsidy claim UI to FarmerDashboard.jsx
-- Add dispute UI to FarmerMarketSell.jsx
-- Add review UI after purchase completion
-- Add price suggestions to RegisterLotStep1.jsx
-- Update fee recipient to MultiSigTreasury address
+- [x] Update GovernmentDashboard.jsx to use IndustryMarkRegistry
+- [x] Update GovernmentNewsHub.jsx to use NewsBulletin
+- [x] Add subsidy claim UI to FarmerDashboard.jsx
+- [x] Add dispute UI to FarmerMarketSell.jsx / LotPurchaseDetail
+- [x] Add review UI after purchase completion (BuyerPurchaseHistory)
+- [x] Add price suggestions on FarmerMarketSell (oracle)
+- [ ] Redeploy fixed DisputeResolution / GasSubsidyPool / MultiSigTreasury and sync addresses
+- [ ] Update FarmerMarket fee recipient to MultiSigTreasury (or route fees into GasSubsidyPool.deposit)
+- [ ] Grant FARMER_ROLE on GasSubsidyPool + ARBITER_ROLE on DisputeResolution for pilot wallets
 
 ### 3. Deploy Subgraph
 ```bash

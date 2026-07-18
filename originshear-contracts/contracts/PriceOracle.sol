@@ -108,9 +108,8 @@ contract PriceOracle is AccessControl, Pausable {
         PriceData memory data = currentPrices[fibreType][grade];
         if (data.pricePerKgWei == 0) return 0;
         
-        // Convert grams to kg and calculate price
-        uint256 weightKg = weightGrams / 1000;
-        suggestedPriceWei = data.pricePerKgWei * weightKg;
+        // pricePerKgWei * grams / 1000 (avoids truncating sub-kg lots to zero)
+        suggestedPriceWei = (uint256(weightGrams) * data.pricePerKgWei) / 1000;
     }
 
     /**

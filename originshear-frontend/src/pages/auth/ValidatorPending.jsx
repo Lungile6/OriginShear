@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAccount } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
 import { shorten } from "../../lib/utils";
-import { SUPPORT, mailtoAdmin } from "../../lib/support";
+import { SUPPORT, mailtoValidator } from "../../lib/support";
 import TopAppBar from "../../components/nav/TopAppBar";
 import Button from "../../components/ui/Button";
 import Icon from "../../components/ui/Icon";
@@ -49,9 +49,11 @@ export default function ValidatorPending() {
             </button>
           </div>
 
-          <Button variant="navy" className="mb-3" icon={<Icon name="mail" />}>
-            Send this address to your administrator
-          </Button>
+          <a href={address ? mailtoValidator(address) : undefined} className="block mb-3">
+            <Button variant="navy" icon={<Icon name="mail" />}>
+              Send this address to your administrator
+            </Button>
+          </a>
           <p className="text-body-sm text-on-surface-variant text-center mb-4">
             Admins typically process new validator requests within 24-48 business hours. You will receive
             an automated notification once approved.

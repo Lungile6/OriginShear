@@ -36,11 +36,11 @@ ORIGINSHEAR gives every wool and mohair bale produced by Lesotho wool and mohair
 | Layer | Technology |
 |---|---|
 | Blockchain | Celo (mobile-first, Africa-optimised, near-zero gas fees) |
-| Smart contracts | Solidity `0.8.24` |
+| Smart contracts | Solidity `0.8.20` |
 | Dev environment | Hardhat + Chai/Mocha |
 | Security libraries | OpenZeppelin `AccessControl`, `Pausable`, `ReentrancyGuard` |
-| Frontend | React + Vite (mobile-first web app) |
-| Payment token | cUSD (Celo's USD-pegged stablecoin) |
+| Frontend | React + Vite (mobile-first web app) — see `originshear-frontend/` |
+| Payment token | cUSD (Mento USD-pegged stablecoin) |
 
 ---
 
@@ -52,14 +52,22 @@ originshear-contracts/
 │   ├── HarvestLedger.sol          ← core registry + Proof of Origin
 │   ├── FarmerMarket.sol           ← cUSD escrow marketplace
 │   ├── ProofOfOriginVerifier.sol  ← buyer / QR verification
-│   └── MockCUSD.sol                ← test-only ERC-20 (local testing only)
+│   ├── IndustryMarkRegistry.sol   ← government ear tags / branding marks
+│   ├── NewsBulletin.sol           ← government notices
+│   ├── GasSubsidyPool.sol         ← farmer gas subsidy from platform fees
+│   ├── DisputeResolution.sol      ← escrow disputes + arbiter resolve
+│   ├── ReputationSystem.sol       ← post-trade reviews
+│   ├── PriceOracle.sol            ← fibre/grade price suggestions
+│   ├── MultiSigTreasury.sol       ← multi-sig fee treasury
+│   └── MockCUSD.sol               ← test-only ERC-20 (local Hardhat only)
 ├── scripts/
 │   └── deploy.js                  ← deploys all contracts + saves addresses
 ├── test/
-│   └── AgriChain.test.js          ← full Hardhat test suite (22 tests)
+│   ├── AgriChain.test.js          ← core suite (HarvestLedger, Verifier, Market)
+│   └── AdvancedFeatures.test.js ← dispute / subsidy / treasury / oracle helpers
+├── deployments.celoSepolia.json   ← current Sepolia addresses (committed for demos)
 ├── hardhat.config.js
 ├── package.json
-├── .env.example
 └── README.md
 ```
 
@@ -79,7 +87,8 @@ The core, immutable registry of harvest lots.
   ```
 - **`validateLot(lotId, approve)`** — validator-only; approves or rejects a pending lot.
 - **`verifyProofOfOrigin(lotId, proofHash)`** — view function checking whether a submitted hash matches the on-chain record.
-- Includes `Pausable` (emergency stop) and `ReentrancyGuard` protections.
+- **`totalLots()`** — enumeration helper for validator UIs / indexing fallbacks.
+- Includes `Pausable` and `ReentrancyGuard` protections.
 
 ### 2. `FarmerMarket.sol`
 
@@ -91,22 +100,35 @@ cUSD escrow marketplace for **validated** lots.
 | 2 | `purchaseLot(offerId)` | Buyer (deposits cUSD into escrow) |
 | 3 | `releasePayment(offerId)` | LNWMGA validator (confirms handover) |
 
-- A **2% platform fee** (`platformFeeBps`, capped at 5%) is deducted on release and sent to `feeRecipient`, subsidising gas costs for rural farmers.
+- A **2% platform fee** (`platformFeeBps`, capped at 5%) is deducted on release and sent to `feeRecipient`.
 - cUSD token addresses:
-  - Celo Sepolia testnet: `0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1`
+  - **Celo Sepolia:** `0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b` (Mento cUSD — **required**)
   - Celo mainnet: `0x765DE816845861e75A25fCA122bb6898B8B1282a`
+  - Alfajores legacy: `0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1` — **do not use on Sepolia**
 
 ### 3. `ProofOfOriginVerifier.sol`
 
-Lightweight, read-only verifier for buyer/exporter QR scanning at checkpoints.
+Lightweight, read-only verifier for buyer/checkpoint QR scanning.
 
-- **`verify(lotId, proofHash)`** — free `eth_call`, zero gas cost; returns full lot details plus `valid` and `isValidated` flags.
-- **`logVerification(lotId, proofHash)`** — same as `verify()`, but emits a `VerificationLogged` event for an on-chain audit trail.
-- **`computeExpectedProof(...)`** — pure helper for off-chain clients (e.g. the mobile app) to recompute the expected Proof of Origin hash.
+- **`verify(lotId, proofHash)`** — free `eth_call`; returns lot details plus `valid` / `isValidated`.
+- **`logVerification(lotId, proofHash)`** — same checks, emits `VerificationLogged`.
+- **`computeExpectedProof(...)`** — pure helper for off-chain clients.
 
-### 4. `MockCUSD.sol` (testing only)
+### 4. Extended platform contracts
 
-A minimal ERC-20 used by the Hardhat test suite to simulate cUSD locally. **Never deploy this to a live network** — use the real cUSD addresses above.
+| Contract | Purpose |
+|----------|---------|
+| `IndustryMarkRegistry` | Government-issued marks (issue / revoke / expiry) |
+| `NewsBulletin` | Government price alerts and notices |
+| `GasSubsidyPool` | Farmers claim daily cUSD gas subsidy (`FARMER_ROLE` on this contract) |
+| `DisputeResolution` | Open/resolve disputes on `IN_ESCROW` offers (`ARBITER_ROLE`) |
+| `ReputationSystem` | Post-purchase reviews / reputation scores |
+| `PriceOracle` | `getSuggestedPrice(fibre, grade, weightGrams)` for listings |
+| `MultiSigTreasury` | Multi-signature withdrawals / subsidy grants |
+
+### 5. `MockCUSD.sol` (testing only)
+
+Minimal ERC-20 for Hardhat tests. **Never deploy to a live network.**
 
 ---
 
@@ -116,39 +138,78 @@ A minimal ERC-20 used by the Hardhat test suite to simulate cUSD locally. **Neve
 |---|---|---|
 | 1. Proof of Origin Hash | `keccak256(farmer + lotId + fibreType + grade + weight + gpsZone + season)` | LAIS-style data tampering |
 | 2. Chain integrity + ReentrancyGuard | On-chain immutable records + OpenZeppelin `nonReentrant` | Ledger forgery / cUSD escrow drain |
-| 3. AccessControl | `FARMER_ROLE`, `VALIDATOR_ROLE`, `DEFAULT_ADMIN_ROLE` | Unauthorized lot submission / rogue validator |
-| 4. JWT Auth + rate limiting (API layer) | 50 req/session, schema validation | API abuse on 2G networks |
+| 3. AccessControl | `FARMER_ROLE`, `VALIDATOR_ROLE`, `DEFAULT_ADMIN_ROLE`, plus gov/arbiter/oracle roles | Unauthorized actions |
+| 4. JWT Auth + rate limiting (API layer) | 50 req / 15 min, schema validation | API abuse on 2G networks |
 | 5. TLS 1.3 transport (API layer) | HTTPS on all API traffic | Interception on rural mobile networks |
 
 ---
 
 ## Setup & Usage
 
+Prefer running deploy/test scripts from the **monorepo root** (`OriginShear/`) so workspace scripts stay consistent. You can also work inside this package.
+
 ### 1. Install dependencies
+
+From repo root:
 
 ```bash
 npm install
 ```
 
-### 2. Run the full test suite (22 tests)
+Or:
 
 ```bash
-npx hardhat test
+cd originshear-contracts
+npm install
 ```
 
-### 3. Get test CELO
+### 2. Configure deployer key
 
-Visit the Celo Sepolia faucet: https://faucet.celo.org/
+Create `originshear-contracts/.env`:
 
-### 4. Deploy to Celo Sepolia testnet
+```env
+PRIVATE_KEY=0xYOUR_DEPLOYER_PRIVATE_KEY
+CELO_SEPOLIA_RPC_URL=https://forno.celo-sepolia.celo-testnet.org
+```
+
+### 3. Run tests
 
 ```bash
-cp .env.example .env
-# edit .env and set PRIVATE_KEY=0x...
+# From repo root
+npm test
+
+# Or in this package
+npx hardhat test
+npx hardhat test test/AdvancedFeatures.test.js
+```
+
+### 4. Get test CELO (+ cUSD for market demos)
+
+- CELO: https://faucet.celo.org/
+- Import Sepolia cUSD in MetaMask: `0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b`
+
+### 5. Deploy to Celo Sepolia
+
+From repo root:
+
+```bash
+npm run deploy:celo-sepolia
+```
+
+Or:
+
+```bash
 npx hardhat run scripts/deploy.js --network celoSepolia
 ```
 
-### 5. Grant additional LNWMGA validator roles
+Writes `deployments.celoSepolia.json`. Then from repo root:
+
+```bash
+npm run sync:addresses celoSepolia
+FARMER_ADDRESS=0x... VALIDATOR_ADDRESS=0x... GOVERNMENT_ADDRESS=0x... npm run seed:roles
+```
+
+### 6. Grant roles manually (optional)
 
 ```bash
 npx hardhat console --network celoSepolia
@@ -157,11 +218,17 @@ npx hardhat console --network celoSepolia
 > await ledger.grantRole(VALIDATOR_ROLE, "0xLNWMGA_OFFICE_WALLET")
 ```
 
-### 6. Deploy to Celo mainnet (after a successful testnet trial)
+### 7. Deploy to Celo mainnet (after a successful testnet trial)
 
 ```bash
 npx hardhat run scripts/deploy.js --network celo
 ```
+
+---
+
+## Current Celo Sepolia deployment
+
+See `deployments.celoSepolia.json` for the authoritative list (updated on each deploy). Summary fields: `HarvestLedger`, `FarmerMarket`, `ProofOfOriginVerifier`, `IndustryMarkRegistry`, `NewsBulletin`, `GasSubsidyPool`, `DisputeResolution`, `ReputationSystem`, `PriceOracle`, `MultiSigTreasury`, and `cUSD`.
 
 ---
 
@@ -200,7 +267,18 @@ HarvestLedger ──verifyProofOfOrigin()──→ ProofOfOriginVerifier
 FarmerMarket  ──cUSD.transfer()────────→ Farmer wallet
 FarmerMarket  ──cUSD.transfer()────────→ feeRecipient (2%)
 Buyer         ──cUSD.transferFrom()────→ FarmerMarket escrow
+DisputeResolution ──market.offers()───→ FarmerMarket (escrow status)
+PriceOracle   ──getSuggestedPrice()────→ Farmer listing UI
+GasSubsidyPool──claimSubsidy()────────→ Farmer wallet (cUSD)
 ```
+
+---
+
+## Related docs
+
+- Full app runbook + submission checklist: [`../README.md`](../README.md)
+- Frontend: [`../originshear-frontend/README.md`](../originshear-frontend/README.md)
+- API: [`../api/README.md`](../api/README.md)
 
 ---
 

@@ -1,11 +1,19 @@
 import { useState } from "react";
-import { useAccount, useChainId, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import {
+  useAccount,
+  useChainId,
+  useReadContract,
+  useReadContracts,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+} from "wagmi";
 import AppLayout from "../../layouts/AppLayout";
 import { useFarmerLots } from "../../hooks/useFarmerLots";
 import { useCusdBalance } from "../../hooks/useCusdBalance";
 import { usePaymentHistory } from "../../hooks/usePaymentHistory";
 import { LotStatus, FibreTypeLabel, GradeLabel } from "../../contracts/HarvestLedger";
 import { FARMER_MARKET_ABI, OfferStatus, OfferStatusLabel } from "../../contracts/FarmerMarket";
+import { PRICE_ORACLE_ABI } from "../../contracts/PriceOracle";
 import { getContractAddresses } from "../../contracts/addresses";
 import { gramsToKg, formatCUSD, cusdToLSL, parseCUSD, shorten } from "../../lib/utils";
 import Icon from "../../components/ui/Icon";
@@ -13,6 +21,7 @@ import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import { LotCardSkeleton } from "../../components/ui/Skeleton";
 import { inputClassName } from "../../components/ui/FormField";
+import OpenDisputePanel from "../../components/market/OpenDisputePanel";
 
 export default function FarmerMarketSell() {
   const { address } = useAccount();
@@ -95,6 +104,7 @@ export default function FarmerMarketSell() {
                 key={lot.lotId.toString()}
                 lot={lot}
                 marketAddress={addresses?.farmerMarket}
+                priceOracleAddress={addresses?.priceOracle}
                 onListed={() => {
                   refetch();
                   refetchOffers();
@@ -111,7 +121,11 @@ export default function FarmerMarketSell() {
             </h2>
             <div className="grid grid-cols-1 gap-stack-md">
               {activeOffers.map((offer) => (
-                <ActiveOfferCard key={offer.offerId.toString()} offer={offer} />
+                <ActiveOfferCard
+                  key={offer.offerId.toString()}
+                  offer={offer}
+                  disputeAddress={addresses?.disputeResolution}
+                />
               ))}
             </div>
           </section>
@@ -134,12 +148,26 @@ export default function FarmerMarketSell() {
   );
 }
 
-function SellableLotCard({ lot, marketAddress, onListed }) {
+function SellableLotCard({ lot, marketAddress, priceOracleAddress, onListed }) {
   const [askPrice, setAskPrice] = useState("");
   const [expanded, setExpanded] = useState(false);
   const [listing, setListing] = useState(false);
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  const { data: suggestedWei } = useReadContract({
+    address: priceOracleAddress,
+    abi: PRICE_ORACLE_ABI,
+    functionName: "getSuggestedPrice",
+    args: [lot.fibreType, lot.grade, Number(lot.weightGrams)],
+    query: {
+      enabled: Boolean(
+        priceOracleAddress &&
+          priceOracleAddress !== "0x0000000000000000000000000000000000000000" &&
+          expanded
+      ),
+    },
+  });
 
   if (isSuccess && listing) {
     setListing(false);
@@ -158,6 +186,7 @@ function SellableLotCard({ lot, marketAddress, onListed }) {
   }
 
   const busy = isPending || isConfirming;
+  const hasSuggestion = suggestedWei != null && BigInt(suggestedWei) > 0n;
 
   return (
     <Card className="flex flex-col gap-4">
@@ -207,11 +236,27 @@ function SellableLotCard({ lot, marketAddress, onListed }) {
             <p className="mt-2 text-primary font-bold text-body-lg">
               ≈ {askPrice ? cusdToLSL(parseCUSD(askPrice)) : "0.00"} LSL
             </p>
+            {hasSuggestion && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <p className="text-label-sm text-on-surface-variant">
+                  Oracle suggest: {formatCUSD(suggestedWei)} cUSD
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAskPrice(formatCUSD(suggestedWei))}
+                >
+                  Use suggestion
+                </Button>
+              </div>
+            )}
           </div>
           <Button onClick={handleList} disabled={busy || !askPrice} loading={busy}>
             Confirm Listing (Netefatsa)
           </Button>
-          <p className="text-label-sm text-on-surface-variant text-center">Includes 2% platform fee on final sale</p>
+          <p className="text-label-sm text-on-surface-variant text-center">
+            Includes 2% platform fee · you receive ~98% net on release
+          </p>
         </div>
       )}
       {error && <p className="text-label-sm text-error">{error.shortMessage}</p>}
@@ -219,7 +264,7 @@ function SellableLotCard({ lot, marketAddress, onListed }) {
   );
 }
 
-function ActiveOfferCard({ offer }) {
+function ActiveOfferCard({ offer, disputeAddress }) {
   return (
     <Card>
       <div className="flex justify-between items-start mb-2">
@@ -231,6 +276,9 @@ function ActiveOfferCard({ offer }) {
       <div className="flex justify-between items-center">
         <div>
           <p className="text-body-md font-bold">{formatCUSD(offer.askPriceWei)} cUSD</p>
+          <p className="text-label-sm text-on-surface-variant">
+            Est. net after 2%: {formatCUSD((BigInt(offer.askPriceWei) * 98n) / 100n)} cUSD
+          </p>
           {offer.status === OfferStatus.IN_ESCROW && (
             <p className="text-label-sm text-on-surface-variant font-mono">Buyer: {shorten(offer.buyer)}</p>
           )}
@@ -241,6 +289,9 @@ function ActiveOfferCard({ offer }) {
           </p>
         )}
       </div>
+      {offer.status === OfferStatus.IN_ESCROW && (
+        <OpenDisputePanel disputeAddress={disputeAddress} offerId={offer.offerId} />
+      )}
     </Card>
   );
 }

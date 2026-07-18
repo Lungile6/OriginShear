@@ -98,6 +98,9 @@ export default function WalletConnect() {
       c.name.toLowerCase().includes("metamask")
   );
   const valoraConnector = uniqueConnectors.find((c) => c.name.toLowerCase().includes("valora"));
+  const walletConnectConnector = uniqueConnectors.find(
+    (c) => c.id === "walletConnect" || c.name.toLowerCase().includes("walletconnect")
+  );
 
   return (
     <div className="min-h-dvh flex flex-col bg-background">
@@ -142,6 +145,24 @@ export default function WalletConnect() {
             >
               Use Valora
             </Button>
+          )}
+          {walletConnectConnector && (
+            <Button
+              key={walletConnectConnector.uid}
+              variant="outline"
+              onClick={() => handleConnect(walletConnectConnector)}
+              disabled={isPending}
+              loading={connectingId === walletConnectConnector.uid && isPending}
+              icon={<Icon name="qr_code_2" />}
+              iconPosition="right"
+            >
+              WalletConnect (Valora / mobile)
+            </Button>
+          )}
+          {!walletConnectConnector && (
+            <p className="text-label-sm text-on-surface-variant text-center">
+              Set VITE_WALLETCONNECT_PROJECT_ID to enable WalletConnect for mobile Valora.
+            </p>
           )}
         </div>
 

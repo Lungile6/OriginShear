@@ -12,13 +12,21 @@ This repository is submitted for implementation and testing demonstration.
 OriginShear/
 ├── originshear-contracts/   # Solidity contracts, tests, deployment scripts
 ├── originshear-frontend/    # React + Vite web app
-├── api/                     # Backend API (auth, lots, market, marks, IPFS endpoints)
+├── api/                     # Backend API (auth, lots, market, marks, IPFS, subsidy, disputes…)
 ├── ipfs/                    # IPFS integration notes and helpers
 ├── subgraph/                # The Graph indexing layer
 ├── scripts/
-│   └── sync-deployments.js  # Copies deployed addresses into frontend .env
+│   ├── sync-deployments.js  # Copies deployed addresses into frontend + api .env
+│   ├── seed-demo.js         # Grants demo roles + advanced feature setup
+│   └── …                    # subgraph sync, smoke/perf helpers
+├── evidence/                # Assessment screenshots, logs, performance reports
 └── README.md
 ```
+
+> **Working directory:** all `npm run …` commands in this README are run from the
+> `OriginShear/` folder (the directory that contains this `package.json`).
+> If your clone is nested (e.g. `Capstone(OriginShear)/OriginShear`), `cd` into
+> the inner `OriginShear` first — otherwise scripts like `seed:roles` will not be found.
 
 ---
 
@@ -55,16 +63,29 @@ Install these before you start:
 | **MetaMask** (or compatible wallet) | latest | Browser extension for on-chain actions |
 
 **Optional (only if deploying your own contracts):**
-- Hardhat local node or a Celo Sepolia wallet funded with test CELO
-- A [Celo Sepolia faucet](https://faucet.celo.org/) account for test tokens
+- A Celo Sepolia wallet funded with test CELO
+- A [Celo Sepolia faucet](https://faucet.celo.org/) account for test CELO / cUSD
+- Hardhat local node (only for fully offline contract work)
 
 **You do not need** a local IPFS node or Infura account for basic local development — the API falls back to storing metadata under `api/data/ipfs-dev/` when remote IPFS is unavailable.
+
+### Important: Celo Sepolia cUSD
+
+Marketplace escrow and subsidy use **Mento cUSD** on Celo Sepolia:
+
+| Network | Token | Address |
+|---------|-------|---------|
+| **Celo Sepolia** | cUSD (Mento) | `0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b` |
+| Celo Mainnet | cUSD | `0x765DE816845861e75A25fCA122bb6898B8B1282a` |
+| Alfajores (legacy) | cUSD | `0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1` — **do not use on Sepolia** |
+
+Add the Sepolia token in MetaMask via **Import tokens** → paste the Sepolia address above.
 
 ---
 
 ## Quick Start (recommended for reviewers)
 
-Use the **pre-deployed Celo Sepolia contracts** already checked into `originshear-contracts/deployments.celoSepolia.json`. This is the fastest path to a running demo.
+Use the **pre-deployed Celo Sepolia contracts** in `originshear-contracts/deployments.celoSepolia.json`. This is the fastest path to a running demo.
 
 ### 1. Clone and install
 
@@ -83,27 +104,43 @@ npm install --prefix api
 cp api/.env.example api/.env
 ```
 
-Edit `api/.env` — at minimum set:
+Then either paste addresses from `deployments.celoSepolia.json`, **or** (preferred after step 3’s frontend `.env` exists) run sync from the repo root:
+
+```bash
+cp originshear-frontend/.env.example originshear-frontend/.env
+npm run sync:addresses celoSepolia
+```
+
+That updates **both** `originshear-frontend/.env` and `api/.env` with the current deployment.
+
+Minimum `api/.env` values (addresses below match `deployments.celoSepolia.json` as of 2026-07-18):
 
 ```env
 JWT_SECRET=<any-long-random-string>
 CELO_SEPOLIA_RPC_URL=https://forno.celo-sepolia.celo-testnet.org
 
-# Paste from originshear-contracts/deployments.celoSepolia.json
-HARVEST_LEDGER_ADDRESS=0x617451963A2ae2B143311094fF5F921a4B169B43
-FARMER_MARKET_ADDRESS=0x3675Db5F51917D55A3D9E96AdD137b314633b003
-PROOF_OF_ORIGIN_VERIFIER_ADDRESS=0x08A5c3E305b8eD5C38b4a6FEF51901D0c30D72Ab
-INDUSTRY_MARK_REGISTRY_ADDRESS=0x084E3c8427203C698f26d4eF34348a4B19041734
-NEWS_BULLETIN_ADDRESS=0x693AC50d8e320b3A5a513454830beA1A3698FD9e
+HARVEST_LEDGER_ADDRESS=0xCdC66542C3a63e9Ac831cba393BcABc3B2aE6068
+FARMER_MARKET_ADDRESS=0x67D273a76F3998d6b4eFf461Dbb508F1A6654FB8
+PROOF_OF_ORIGIN_VERIFIER_ADDRESS=0x1fC854Cb2D737363473Ce51844daa48220774899
+INDUSTRY_MARK_REGISTRY_ADDRESS=0xcac97CBa1D7685dd3B9A976Ca10fEb715BD43a57
+NEWS_BULLETIN_ADDRESS=0x2dBf9b14246f571e0487345870dEF0E0Ab6Fb6d7
+GAS_SUBSIDY_POOL_ADDRESS=0xb0B3699774b5a3ad8a94628455c0268a66d75FfC
+DISPUTE_RESOLUTION_ADDRESS=0xb235008e74a337D62337E87Be956fF0F15809f44
+REPUTATION_SYSTEM_ADDRESS=0xF3b20B3572097fDcbE5AB1D66a717396e03B9d18
+PRICE_ORACLE_ADDRESS=0x841B4FFD60948dC8651446610253B64E9D3e3939
+MULTI_SIG_TREASURY_ADDRESS=0x40D1c8bB36b704050b8d2498da9D4566D1374a21
 
-# Subgraph — ask the repo owner or use the value in their shared .env
+# Relayer = deployer/admin wallet (needed for validateLot, releasePayment, news, marks, dispute resolve)
+RELAYER_PRIVATE_KEY=<deployer_private_key>
+
+# Subgraph — update after you redeploy/reindex against the addresses above
 GRAPHQL_ENDPOINT=https://api.studio.thegraph.com/query/1756052/origin-shear/v0.0.4
 
 # Local dev: no Infura/Pinata required
 IPFS_DEV_FALLBACK=true
 ```
 
-For **easiest local testing without on-chain roles**, you can also add:
+For **easiest local UI testing without on-chain roles**, you can also add:
 
 ```env
 DEV_BYPASS_ROLE_GUARDS=true
@@ -113,38 +150,60 @@ DEV_BYPASS_ROLE_GUARDS=true
 
 ### 3. Configure the frontend
 
+If you have not already:
+
 ```bash
 cp originshear-frontend/.env.example originshear-frontend/.env
 npm run sync:addresses celoSepolia
 ```
 
-This writes contract addresses from `deployments.celoSepolia.json` into `originshear-frontend/.env`.
-
-Optionally add for local role testing:
+Optionally for local role testing (unlocks all role routes):
 
 ```env
 VITE_DEV_BYPASS_ROLE_GUARDS=true
 ```
 
-### 4. Start the API (terminal 1)
+Optional WalletConnect (Valora / mobile QR):
+
+```env
+VITE_WALLETCONNECT_PROJECT_ID=<from https://cloud.walletconnect.com>
+```
+
+### 4. Grant demo roles (production-style testing)
+
+Without role bypass, each wallet needs the matching on-chain role. From **repo root**:
+
+```bash
+FARMER_ADDRESS=0xYourFarmerWallet \
+VALIDATOR_ADDRESS=0xYourValidatorWallet \
+GOVERNMENT_ADDRESS=0xYourGovWallet \
+npm run seed:roles
+```
+
+This registers the farmer, grants validator/government roles, subsidy `FARMER_ROLE`, dispute `ARBITER_ROLE`, and seeds demo oracle prices.
+
+Advanced-only (oracle / arbiter / optional subsidy deposit):
+
+```bash
+npm run seed:advanced
+# After deployer holds test cUSD:
+SEED_SUBSIDY_DEPOSIT=true SUBSIDY_DEPOSIT_CUSD=10 npm run seed:advanced
+```
+
+Buyer wallets need **no role** — fund them with Sepolia cUSD (`0xdE9e4C3c…`).
+
+### 5. Start the API (terminal 1)
 
 ```bash
 cd api
 npm run dev
 ```
 
-Expected output:
+Verify: open [http://localhost:3000/health](http://localhost:3000/health) — should return JSON with `"status":"ok"`.
 
-```
-Server running on port 3000
-Environment: development
-```
+IPFS health: [http://localhost:3000/api/ipfs/health](http://localhost:3000/api/ipfs/health)
 
-Verify: open [http://localhost:3000/health](http://localhost:3000/health) — should return `{ "ok": true }`.
-
-IPFS health check: [http://localhost:3000/api/ipfs/health](http://localhost:3000/api/ipfs/health)
-
-### 5. Start the frontend (terminal 2)
+### 6. Start the frontend (terminal 2)
 
 From the **repo root**:
 
@@ -154,22 +213,35 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173)
 
-### 6. Connect your wallet
+### 7. Connect the right wallet for each role
 
-1. Install MetaMask and create/import a wallet
-2. Add **Celo Sepolia** network (chain ID `11142220`) — the app prompts you if you're on the wrong network
-3. Get test CELO from the [Celo faucet](https://faucet.celo.org/)
-4. Click **Connect Wallet** in the app
+The app uses **whichever MetaMask account is currently selected**. It does not pick an address for you.
 
-### 7. Smoke-test the main flows
+1. Install MetaMask and import/create separate accounts (e.g. Farmer, Validator, Government, Buyer).
+2. Add **Celo Sepolia** (chain ID `11142220`).
+3. Get test CELO from the [Celo faucet](https://faucet.celo.org/); import Sepolia cUSD for buyers.
+4. In MetaMask, **select the account** that matches the role you want.
+5. In the app: **Connect Wallet** → on Role select, tap the matching card.
+
+| Role card | Needs on-chain role | If wrong wallet |
+|-----------|---------------------|-----------------|
+| Wool & Mohair Farmer | `FARMER_ROLE` (via `seed:roles`) | Onboarding / pending |
+| LNWMGA Validator | `VALIDATOR_ROLE` | Validator pending |
+| Government | `GOVERNMENT_ROLE` on marks/news | Government pending |
+| Buyer / Verifier | none | Always available when connected |
+
+To switch roles: change account in MetaMask → refresh → Connect again → choose that role card.
+
+### 8. Smoke-test the main flows
 
 | Role | What to try |
 |------|-------------|
-| **Wool & mohair farmer** | Register a lot → review → confirm on-chain → view in My Lots |
-| **Validator** | Open validation queue → approve/reject a pending lot |
-| **Buyer** | Browse marketplace (no wallet required) → connect to purchase |
-| **Public** | `/buyer/verify` — verify a lot by ID and proof hash |
-| **Government** | Compose news bulletin (requires `GOVERNMENT_ROLE` or dev bypass) |
+| **Wool & mohair farmer** | Register a lot → review → confirm on-chain → My Lots → QR proof → list on Market (oracle suggestion if prices seeded) |
+| **Validator** | Validation queue → approve/reject → escrow release queue |
+| **Buyer** | Marketplace → purchase (approve cUSD) → purchase history → rate farmer |
+| **Public** | `/verify` or `/buyer/verify` — verify by lot ID + proof hash |
+| **Government** | Issue/revoke industry marks · compose news bulletin |
+| **Advanced** | Farmer gas subsidy claim · open dispute while offer is IN_ESCROW |
 
 ---
 
@@ -184,9 +256,22 @@ npm run compile
 npm test
 ```
 
+Advanced-contract helper tests:
+
+```bash
+npm run test --workspace=originshear-contracts -- test/AdvancedFeatures.test.js
+```
+
 ### 2. Deploy to Celo Sepolia
 
-You need a funded deployer wallet. Set `RELAYER_PRIVATE_KEY` or use Hardhat's configured account in `originshear-contracts/hardhat.config.js`.
+In `originshear-contracts/.env` set:
+
+```env
+PRIVATE_KEY=0x...
+CELO_SEPOLIA_RPC_URL=https://forno.celo-sepolia.celo-testnet.org
+```
+
+Deployer needs test CELO. Deploy uses **Mento cUSD** `0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b` on Sepolia.
 
 ```bash
 npm run deploy:celo-sepolia
@@ -200,25 +285,31 @@ This creates/updates `originshear-contracts/deployments.celoSepolia.json`.
 npm run sync:addresses celoSepolia
 ```
 
-Copy the same addresses into `api/.env`:
+Also set `RELAYER_PRIVATE_KEY` in `api/.env` to the same deployer key (for relayed validator/gov writes).
 
-```env
-HARVEST_LEDGER_ADDRESS=<from deployments file>
-FARMER_MARKET_ADDRESS=<from deployments file>
-PROOF_OF_ORIGIN_VERIFIER_ADDRESS=<from deployments file>
-INDUSTRY_MARK_REGISTRY_ADDRESS=<from deployments file>
-NEWS_BULLETIN_ADDRESS=<from deployments file>
+### 4. Grant on-chain roles
+
+```bash
+FARMER_ADDRESS=0x... VALIDATOR_ADDRESS=0x... GOVERNMENT_ADDRESS=0x... npm run seed:roles
 ```
 
-### 4. Grant on-chain roles (production-style testing)
+Without `DEV_BYPASS_ROLE_GUARDS`:
 
-Without `DEV_BYPASS_ROLE_GUARDS`, wallets need roles on the contracts:
+- **Farmer**: `registerFarmer` / `FARMER_ROLE` (+ `FARMER_ROLE` on GasSubsidyPool via seed)
+- **Validator**: `VALIDATOR_ROLE` on HarvestLedger + FarmerMarket (+ `ARBITER_ROLE` on DisputeResolution)
+- **Government**: `GOVERNMENT_ROLE` on IndustryMarkRegistry + NewsBulletin (+ GasSubsidyPool)
 
-- **Wool & mohair farmer**: register via `HarvestLedger.registerFarmer()` or be granted `FARMER_ROLE`
-- **Validator**: `VALIDATOR_ROLE` on `HarvestLedger`
-- **Government**: `GOVERNMENT_ROLE` on `IndustryMarkRegistry` and/or `DEFAULT_ADMIN_ROLE`
+### 5. (Optional) Redeploy subgraph
 
-Set `RELAYER_PRIVATE_KEY` in `api/.env` for API-relayed validator/government writes (`validateLot`, `releasePayment`, `publishNews`, `issueMark`).
+After a full redeploy, marketplace list endpoints need a subgraph that indexes the **new** addresses:
+
+```bash
+npm run sync:subgraph celoSepolia
+npm run subgraph:build
+# then deploy from subgraph/ with your Graph Studio credentials
+```
+
+Update `GRAPHQL_ENDPOINT` in `api/.env` to the new Studio query URL.
 
 ---
 
@@ -230,17 +321,22 @@ Set `RELAYER_PRIVATE_KEY` in `api/.env` for API-relayed validator/government wri
 |----------|----------|-------------|
 | `JWT_SECRET` | Yes | Secret for signing API session tokens |
 | `CELO_SEPOLIA_RPC_URL` | Yes | RPC endpoint for Celo Sepolia |
-| `HARVEST_LEDGER_ADDRESS` | Yes* | HarvestLedger contract |
-| `FARMER_MARKET_ADDRESS` | Yes* | FarmerMarket contract |
-| `PROOF_OF_ORIGIN_VERIFIER_ADDRESS` | Yes* | Verifier contract |
-| `INDUSTRY_MARK_REGISTRY_ADDRESS` | For marks/gov | Industry mark registry |
-| `NEWS_BULLETIN_ADDRESS` | For news | News bulletin contract |
+| `HARVEST_LEDGER_ADDRESS` | Yes* | HarvestLedger |
+| `FARMER_MARKET_ADDRESS` | Yes* | FarmerMarket |
+| `PROOF_OF_ORIGIN_VERIFIER_ADDRESS` | Yes* | Verifier |
+| `INDUSTRY_MARK_REGISTRY_ADDRESS` | For marks/gov | Industry marks |
+| `NEWS_BULLETIN_ADDRESS` | For news | News bulletins |
+| `GAS_SUBSIDY_POOL_ADDRESS` | For subsidy API | Gas subsidy pool |
+| `DISPUTE_RESOLUTION_ADDRESS` | For disputes API | Dispute resolution |
+| `REPUTATION_SYSTEM_ADDRESS` | For reputation API | Reputation |
+| `PRICE_ORACLE_ADDRESS` | For oracle API | Price oracle |
+| `MULTI_SIG_TREASURY_ADDRESS` | Optional | Multi-sig treasury |
 | `GRAPHQL_ENDPOINT` | Recommended | The Graph subgraph URL |
-| `RELAYER_PRIVATE_KEY` | Optional | Relayer wallet for gated API writes |
+| `RELAYER_PRIVATE_KEY` | For relayed writes | Deployer/admin key |
 | `IPFS_DEV_FALLBACK` | Dev | `true` = local metadata store when IPFS fails |
 | `DEV_BYPASS_ROLE_GUARDS` | Dev only | Skip validator/government role checks |
 
-\*Required for on-chain reads/writes; defaults in frontend fall back to older addresses if unset.
+\*Required for on-chain reads/writes. Prefer `npm run sync:addresses celoSepolia` over hand-editing.
 
 See `api/.env.example` for the full list including IPFS options (Pinata, Infura JWT, local node).
 
@@ -250,18 +346,17 @@ See `api/.env.example` for the full list including IPFS options (Pinata, Infura 
 |----------|----------|-------------|
 | `VITE_API_BASE_URL` | Yes | API base URL (default `http://localhost:3000`) |
 | `VITE_CELO_SEPOLIA_RPC_URL` | Recommended | RPC for wagmi/viem |
-| `VITE_CELO_SEPOLIA_*` | Yes | Contract addresses per network |
+| `VITE_CELO_SEPOLIA_*` | Yes | Contract addresses (synced from deployments) |
 | `VITE_DEV_BYPASS_ROLE_GUARDS` | Dev only | Unlock all role routes locally |
+| `VITE_WALLETCONNECT_PROJECT_ID` | Optional | Enables WalletConnect connector |
 | `VITE_IPFS_GATEWAY` | Optional | Public IPFS gateway for metadata links |
-
-Run `npm run sync:addresses celoSepolia` to populate contract address variables automatically.
 
 ---
 
 ## Running Tests
 
 ```bash
-# Smart contract unit tests (22 tests)
+# Smart contract unit tests (core + advanced helpers)
 npm test
 
 # API integration tests — run from repo root
@@ -303,12 +398,15 @@ NODE_ENV=production npm start
 
 | Problem | Fix |
 |---------|-----|
-| **Frontend can't reach API** | Ensure API is on port 3000 and `VITE_API_BASE_URL=http://localhost:3000` |
-| **Wrong network** | Switch MetaMask to Celo Sepolia (chain ID `11142220`) |
-| **Unauthorized / role errors** | Set `VITE_DEV_BYPASS_ROLE_GUARDS=true` and `DEV_BYPASS_ROLE_GUARDS=true` for local dev, or grant on-chain roles |
-| **IPFS upload failed** | Set `IPFS_DEV_FALLBACK=true` in `api/.env` — metadata saves to `api/data/ipfs-dev/` |
-| **Marketplace empty** | Subgraph may lag; check `GRAPHQL_ENDPOINT` and that lots were listed on-chain |
-| **Validator queue empty** | Lots must be in `PENDING` status; farmer must complete registration |
+| **`Missing script: "seed:roles"`** | You are not in `OriginShear/` — `cd` into the folder that contains root `package.json` |
+| **Frontend can't reach API** | API on port 3000; `VITE_API_BASE_URL=http://localhost:3000` |
+| **Wrong network** | MetaMask → Celo Sepolia (chain ID `11142220`) |
+| **Unauthorized / pending role** | Select the wallet that was seeded for that role, or set `VITE_DEV_BYPASS_ROLE_GUARDS=true` / `DEV_BYPASS_ROLE_GUARDS=true` for local UI-only testing |
+| **`balanceOf` / cUSD errors** | Use Sepolia Mento cUSD `0xdE9e4C3c…`, not Alfajores `0x8740…`; redeploy if contracts were built with the wrong token |
+| **IPFS upload failed** | Set `IPFS_DEV_FALLBACK=true` in `api/.env` |
+| **Marketplace empty** | Subgraph may lag or still index old addresses — check `GRAPHQL_ENDPOINT` / redeploy subgraph |
+| **Validator queue empty** | Lots must be `PENDING`; farmer must finish registration on the **current** HarvestLedger |
+| **Subsidy deposit skipped (0 cUSD)** | Fund deployer with Sepolia cUSD, then `SEED_SUBSIDY_DEPOSIT=true npm run seed:advanced` |
 | **npm install errors** | Use Node 20.x; delete `node_modules` and re-run `npm install` at root and in `api/` |
 
 ---

@@ -5,36 +5,78 @@ REST API layer for ORIGINSHEAR with nonce-based wallet authentication, JWT sessi
 ## Features
 
 - **Replay-resistant Auth**: One-time nonce challenge + wallet signature login
-- **On-chain Role Authorization**: Relayer writes are gated by live role checks (`VALIDATOR_ROLE`, `GOVERNMENT_ROLE`)
+- **On-chain Role Authorization**: Relayer writes gated by live role checks (`VALIDATOR_ROLE`, `GOVERNMENT_ROLE`)
 - **Rate Limiting**: 50 requests per 15 minutes (optimized for 2G/3G)
 - **Caching**: 5-minute cache for frequently accessed data
 - **Compression**: gzip compression for bandwidth optimization
 - **Security**: Helmet.js headers, CORS, input validation
+- **IPFS**: lot metadata upload (Pinata / Infura / local / dev fallback)
+- **Advanced reads**: subsidy availability, disputes, price oracle suggestions, reputation
 
 ## Setup
 
+From the **OriginShear** repo root (recommended):
+
+```bash
+npm install --prefix api
+cp api/.env.example api/.env
+cp originshear-frontend/.env.example originshear-frontend/.env   # if needed for sync
+npm run sync:addresses celoSepolia   # fills contract addresses in api/.env + frontend .env
+```
+
+Then edit `api/.env` for secrets:
+
+```env
+JWT_SECRET=<long-random-string>
+RELAYER_PRIVATE_KEY=<deployer_private_key>   # same wallet that deployed / has admin roles
+CELO_SEPOLIA_RPC_URL=https://forno.celo-sepolia.celo-testnet.org
+GRAPHQL_ENDPOINT=<your Graph Studio query URL>
+IPFS_DEV_FALLBACK=true
+```
+
+Start:
+
 ```bash
 cd api
-npm install
-cp .env.example .env
-# Edit .env with your configuration
 npm run dev
 ```
 
+Health check: [http://localhost:3000/health](http://localhost:3000/health) → `{ "status": "ok", ... }`.
+
+> Never commit `api/.env`.
+
 ## Environment Variables
 
-See `.env.example` for required variables:
-- `PORT`: API server port (default: 3000)
-- `JWT_SECRET`: Secret for JWT token signing (required)
-- `JWT_EXPIRES_IN`: Token expiration window (default: `24h`)
-- `AUTH_CHALLENGE_TTL_SECONDS`: Login challenge TTL in seconds (default: `300`)
-- `ENABLE_ONCHAIN_ROLE_RESOLUTION`: Resolve login role claims from chain during `/auth/login` (default: `false`)
-- `FRONTEND_URL`: Frontend URL for CORS
-- `CELO_SEPOLIA_RPC_URL`: Celo Sepolia RPC endpoint
-- `GRAPHQL_ENDPOINT`: The Graph subgraph endpoint
-- `IPFS_API_URL`: IPFS API endpoint used for metadata uploads
-- `INFURA_PROJECT_ID` / `INFURA_PROJECT_SECRET`: Optional credentials for Infura-backed IPFS API
-- `IPFS_GATEWAY`: Public IPFS gateway used when returning browseable links
+See `.env.example`. Common keys:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `PORT` | No | Default `3000` |
+| `JWT_SECRET` | Yes | JWT signing secret |
+| `JWT_EXPIRES_IN` | No | Default `24h` |
+| `AUTH_CHALLENGE_TTL_SECONDS` | No | Default `300` |
+| `ENABLE_ONCHAIN_ROLE_RESOLUTION` | No | Embed roles in JWT on login |
+| `FRONTEND_URL` | No | CORS allowlist (comma-separated) |
+| `CELO_SEPOLIA_RPC_URL` | Yes | Celo Sepolia RPC |
+| `RELAYER_PRIVATE_KEY` | For relayed writes | Validator/gov/dispute resolve txs |
+| `HARVEST_LEDGER_ADDRESS` | Yes* | Core ledger |
+| `FARMER_MARKET_ADDRESS` | Yes* | Marketplace |
+| `PROOF_OF_ORIGIN_VERIFIER_ADDRESS` | Yes* | Verifier |
+| `INDUSTRY_MARK_REGISTRY_ADDRESS` | Marks | Marks registry |
+| `NEWS_BULLETIN_ADDRESS` | News | News bulletin |
+| `GAS_SUBSIDY_POOL_ADDRESS` | Subsidy API | Gas subsidy |
+| `DISPUTE_RESOLUTION_ADDRESS` | Disputes API | Disputes |
+| `REPUTATION_SYSTEM_ADDRESS` | Reputation API | Reputation |
+| `PRICE_ORACLE_ADDRESS` | Oracle API | Price oracle |
+| `MULTI_SIG_TREASURY_ADDRESS` | Optional | Treasury |
+| `GRAPHQL_ENDPOINT` | Recommended | The Graph query URL |
+| `IPFS_DEV_FALLBACK` | Dev | Local metadata under `api/data/ipfs-dev/` |
+| `DEV_BYPASS_ROLE_GUARDS` | Dev only | Skip on-chain role checks |
+
+\*Prefer `npm run sync:addresses celoSepolia` from the repo root after deploy.
+
+**cUSD on Celo Sepolia** (used by deployed market/subsidy contracts):  
+`0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b` — not the Alfajores address.
 
 ## API Endpoints
 
@@ -57,7 +99,7 @@ Auth flow:
 - `GET /api/lots` - Get lots with pagination
 - `GET /api/lots/:id` - Get lot by ID
 - `POST /api/lots` - Register new lot (returns wallet-call instructions; no farmer relayer yet)
-- `PUT /api/lots/:id/validate` - Validate lot
+- `PUT /api/lots/:id/validate` - Validate lot (validator + relayer)
 
 ### Farmers
 
@@ -71,8 +113,8 @@ Auth flow:
 - `GET /api/market/offers/:id` - Get offer by ID
 - `POST /api/market/offers` - List lot for sale (returns wallet-call instructions; no farmer relayer yet)
 - `POST /api/market/offers/:id/purchase` - Purchase lot (returns wallet-call instructions; no buyer relayer yet)
-- `POST /api/market/offers/:id/release` - Release payment
-- `GET /api/market/payments` - Get payment history
+- `POST /api/market/offers/:id/release` - Release payment (validator + relayer)
+- `GET /api/market/payments` - Get payment history (`PaymentReleased` net/fee)
 
 ### Marks
 
@@ -85,11 +127,23 @@ Auth flow:
 ### News
 
 - `GET /api/news` - Get government bulletins (shared feed)
-- `POST /api/news` - Publish a government bulletin
+- `POST /api/news` - Publish a government bulletin (government + relayer)
 
 ### IPFS
 
 - `POST /api/ipfs/lot-metadata` - Upload lot metadata JSON and return `ipfs://` URI + gateway URL
+- `GET /api/ipfs/health` - IPFS / fallback status
+
+### Subsidy / Disputes / Oracle / Reputation
+
+- `GET /api/subsidy?farmer=0x…` - Available daily claim + pool balance
+- `GET /api/disputes/offer/:offerId` - Disputes for an offer
+- `GET /api/disputes/:disputeId` - Dispute details
+- `POST /api/disputes/:disputeId/resolve` - Arbiter/validator-relayed resolve (`resolution` 2=farmer, 3=buyer)
+- `GET /api/oracle/suggest?fibreType=&grade=&weightGrams=` - Suggested ask price
+- `GET /api/reputation/:wallet` - On-chain reputation (or empty if unregistered)
+
+Opening disputes, claiming subsidy, and submitting reviews stay **wallet-direct** in the frontend.
 
 ## Rate Limiting
 
@@ -118,6 +172,13 @@ npm run test:ci
 npm run test:ci:debug
 ```
 
+From repo root:
+
+```bash
+npm run test:api
+npm run assess:test-data-values
+```
+
 Guidance:
 - Use `npm test` for day-to-day local checks.
 - Use `npm run test:ci` before pushing if you want to match CI behavior exactly.
@@ -127,11 +188,19 @@ Guidance:
 
 1. Set `NODE_ENV=production`
 2. Use strong `JWT_SECRET`
-3. Configure proper CORS origins
+3. Configure proper CORS origins (`FRONTEND_URL`)
 4. Set up reverse proxy (nginx)
 5. Enable HTTPS
 6. Configure monitoring/logging
-7. Set `RELAYER_PRIVATE_KEY` only for validator-side relayed actions (`validateLot`, `releasePayment`)
+7. Set `RELAYER_PRIVATE_KEY` for validator/gov relayed actions (`validateLot`, `releasePayment`, marks, news, dispute resolve)
 8. Ensure caller wallets are granted on-chain roles before relayer writes:
-   - `VALIDATOR_ROLE` on `HARVEST_LEDGER_ADDRESS`
-   - `GOVERNMENT_ROLE` on `INDUSTRY_MARK_REGISTRY_ADDRESS`
+   - `VALIDATOR_ROLE` on `HARVEST_LEDGER_ADDRESS` / `FARMER_MARKET_ADDRESS`
+   - `GOVERNMENT_ROLE` on `INDUSTRY_MARK_REGISTRY_ADDRESS` / `NEWS_BULLETIN_ADDRESS`
+   - `ARBITER_ROLE` on `DISPUTE_RESOLUTION_ADDRESS` for the relayer when resolving disputes
+9. Keep `DEV_BYPASS_ROLE_GUARDS` unset/false in production
+
+## Related docs
+
+- Full app runbook + submission guide: [`../README.md`](../README.md)
+- Role seeding: `npm run seed:roles` / `npm run seed:advanced` from repo root
+- Contracts: [`../originshear-contracts/README.md`](../originshear-contracts/README.md)

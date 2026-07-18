@@ -31,11 +31,11 @@ export const NAV_BY_ROLE = {
 };
 
 export const GLOBAL_MENU_LINKS = [
-  { label: "Landing Page", to: "/" },
-  { label: "Connect Wallet", to: "/connect" },
-  { label: "Choose Role", to: "/role-select" },
-  { label: "Marketplace", to: "/buyer/marketplace" },
-  { label: "Verify a Lot", to: "/buyer/verify" },
-  { label: "Ministry News", to: "/news" },
-  { label: "Network Help", to: "/help/network" },
+  { label: "Landing Page", to: "/", icon: "home" },
+  { label: "Connect Wallet", to: "/connect", icon: "account_balance_wallet" },
+  { label: "Choose Role", to: "/role-select", icon: "badge" },
+  { label: "Marketplace", to: "/buyer/marketplace", icon: "storefront" },
+  { label: "Verify a Lot", to: "/buyer/verify", icon: "qr_code_scanner" },
+  { label: "Ministry News", to: "/news", icon: "newspaper" },
+  { label: "Network Help", to: "/help/network", icon: "help" },
 ];

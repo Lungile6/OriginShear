@@ -19,6 +19,7 @@ import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import Icon from "../../components/ui/Icon";
 import { LotCardSkeleton } from "../../components/ui/Skeleton";
+import OpenDisputePanel from "../../components/market/OpenDisputePanel";
 
 export default function LotPurchaseDetail() {
   const { lotId } = useParams();
@@ -297,6 +298,18 @@ export default function LotPurchaseDetail() {
                 </div>
               </div>
             )}
+
+            {isEscrow &&
+              address &&
+              offerData.buyer?.toLowerCase() === address.toLowerCase() && (
+                <div className="mt-4">
+                  <OpenDisputePanel
+                    disputeAddress={addresses?.disputeResolution}
+                    offerId={offerData.offerId}
+                    onOpened={() => refetchOffer()}
+                  />
+                </div>
+              )}
 
             {offerData.status === OfferStatus.IN_ESCROW &&
               offerData.buyer &&
