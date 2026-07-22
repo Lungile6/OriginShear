@@ -367,6 +367,11 @@ npm run assess:test-data-values
 
 # Full assessment bundle (contracts + API)
 npm run assess:test-strategies
+
+# Live smoke test (API must be running)
+npm run smoke
+# Against a remote API:
+SMOKE_API_BASE=https://your-api.example.com npm run smoke
 ```
 
 API tests only:
@@ -374,6 +379,28 @@ API tests only:
 ```bash
 cd api
 npm test
+```
+
+### CI / CD
+
+- **CI** (`.github/workflows/ci.yml`) — on every push/PR: frontend build, contract tests, API tests, subgraph build.
+- **CD** (`.github/workflows/cd.yml`) — after green CI on `main`/`master` (or manual dispatch): builds the frontend for the target network and uploads `originshear-frontend/dist` as an artifact. Optional Vercel publish when repo variable `ENABLE_VERCEL_DEPLOY=true` and secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` are set.
+
+Set GitHub **Variables** for production builds: `CHAIN_NETWORK`, `VITE_API_BASE_URL`, and the `VITE_CELO_SEPOLIA_*` / `VITE_CELO_*` address vars.
+
+### Switch Sepolia ↔ mainnet (env-driven)
+
+```bash
+# Stay on / return to Sepolia (default)
+npm run use:sepolia
+
+# After contracts are deployed to Celo mainnet:
+npm run deploy:celo
+npm run use:mainnet
+# Then restart API + frontend (or redeploy hosts) with:
+#   CHAIN_NETWORK=celo
+#   VITE_CHAIN_NETWORK=celo
+#   DEV_BYPASS / VITE_DEV_BYPASS_ROLE_GUARDS=false
 ```
 
 ---
