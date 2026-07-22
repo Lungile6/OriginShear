@@ -1,4 +1,5 @@
 const { ethers } = require("ethers");
+const { getProvider } = require("./rpc");
 
 const HARVEST_LEDGER_ROLE_ABI = [
   "function FARMER_ROLE() view returns (bytes32)",
@@ -11,11 +12,6 @@ const INDUSTRY_MARK_REGISTRY_ROLE_ABI = [
   "function GOVERNMENT_ROLE() view returns (bytes32)",
   "function hasRole(bytes32 role, address account) view returns (bool)",
 ];
-
-function getProvider() {
-  const rpcUrl = process.env.CELO_SEPOLIA_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org";
-  return new ethers.JsonRpcProvider(rpcUrl);
-}
 
 function requireAddress(value, name) {
   if (!value) {

@@ -1,5 +1,6 @@
 const express = require("express");
 const { ethers } = require("ethers");
+const { getProvider } = require("../lib/rpc");
 
 const router = express.Router();
 
@@ -8,12 +9,6 @@ const GAS_SUBSIDY_MIN_ABI = [
   "function maxDailyClaim() view returns (uint256)",
   "function currentBalance() view returns (uint256)",
 ];
-
-function getProvider() {
-  const rpcUrl =
-    process.env.CELO_SEPOLIA_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org";
-  return new ethers.JsonRpcProvider(rpcUrl);
-}
 
 function getSubsidyContract(provider) {
   const address = process.env.GAS_SUBSIDY_POOL_ADDRESS;
