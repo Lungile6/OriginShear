@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useNetworkGuard } from "../../hooks/useNetworkGuard";
+import { DEFAULT_CHAIN } from "../../lib/wagmiConfig";
 import TopAppBar from "../../components/nav/TopAppBar";
 import Button from "../../components/ui/Button";
 import Icon from "../../components/ui/Icon";
@@ -25,7 +26,8 @@ export default function WrongNetwork() {
           <h1 className="text-headline-md font-bold mb-2">Wrong Network</h1>
           <p className="text-body-md text-on-surface-variant mb-6">
             Your wallet is connected to the wrong network.{" "}
-            <span className="font-semibold text-on-surface">ORIGINSHEAR</span> runs on Celo Sepolia.
+            <span className="font-semibold text-on-surface">ORIGINSHEAR</span> runs on{" "}
+            {DEFAULT_CHAIN.name}.
           </p>
 
           <Button
@@ -40,7 +42,7 @@ export default function WrongNetwork() {
             loading={isSwitchingNetwork}
             icon={<Icon name="swap_horiz" />}
           >
-            Switch to Celo Sepolia
+            Switch to {DEFAULT_CHAIN.name}
           </Button>
 
           <button
@@ -61,7 +63,7 @@ export default function WrongNetwork() {
               ERROR_CODE: 0x403_INVALID_CHAIN_ID
             </code>
             <code className="text-label-sm text-on-surface-variant font-mono block">
-              CURRENT: {chainId ?? "unknown"} · EXPECTED: 11142220 (Celo Sepolia)
+              CURRENT: {chainId ?? "unknown"} · EXPECTED: {DEFAULT_CHAIN.id} ({DEFAULT_CHAIN.name})
             </code>
           </div>
 
