@@ -4,6 +4,7 @@ const { authenticate } = require('../middleware/auth');
 const { requireGovernmentRole } = require('../middleware/onchainAuth');
 const { querySubgraph } = require('../lib/subgraph');
 const { ethers } = require('ethers');
+const { getProvider } = require('../lib/rpc');
 
 const router = express.Router();
 const MARK_STATUS = {
@@ -39,9 +40,10 @@ function getRelayerSigner() {
     err.status = 501;
     throw err;
   }
-  const rpcUrl = process.env.CELO_SEPOLIA_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org";
-  const provider = new ethers.JsonRpcProvider(rpcUrl);
-  return new ethers.Wallet(privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`, provider);
+  return new ethers.Wallet(
+    privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`,
+    getProvider()
+  );
 }
 
 function invalidateMarksCache(cache) {

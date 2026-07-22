@@ -1,6 +1,6 @@
 export const TOKEN_ADDRESSES = {
   11155111: "0x71660c4005BA85c37ccec55d0C4493E66Fe775d3", // Sepolia USDC
-  42220: "0x765DE816845861e75A25fCA122bb6898B8B1282a",   // Celo mainnet cUSD
+  42220: "0x765DE816845861e75A25fCA122bb6898B8B1282a", // Celo mainnet cUSD
   11142220: "0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b", // Celo Sepolia cUSD (Mento)
 };
 
@@ -26,6 +26,22 @@ function celoSepoliaAddresses() {
   };
 }
 
+function celoMainnetAddresses() {
+  return {
+    harvestLedger: import.meta.env.VITE_CELO_HARVEST_LEDGER || ZERO,
+    farmerMarket: import.meta.env.VITE_CELO_FARMER_MARKET || ZERO,
+    verifier: import.meta.env.VITE_CELO_VERIFIER || ZERO,
+    industryMarkRegistry: import.meta.env.VITE_CELO_INDUSTRY_MARK_REGISTRY || ZERO,
+    newsBulletin: import.meta.env.VITE_CELO_NEWS_BULLETIN || ZERO,
+    gasSubsidyPool: import.meta.env.VITE_CELO_GAS_SUBSIDY_POOL || ZERO,
+    disputeResolution: import.meta.env.VITE_CELO_DISPUTE_RESOLUTION || ZERO,
+    reputationSystem: import.meta.env.VITE_CELO_REPUTATION_SYSTEM || ZERO,
+    priceOracle: import.meta.env.VITE_CELO_PRICE_ORACLE || ZERO,
+    multiSigTreasury: import.meta.env.VITE_CELO_MULTI_SIG_TREASURY || ZERO,
+    token: TOKEN_ADDRESSES[42220],
+  };
+}
+
 export const CONTRACT_ADDRESSES = {
   // Celo Sepolia — ACTIVE DEPLOYMENT
   11142220: celoSepoliaAddresses(),
@@ -44,19 +60,7 @@ export const CONTRACT_ADDRESSES = {
     token: TOKEN_ADDRESSES[11155111],
   },
   // Celo mainnet
-  42220: {
-    harvestLedger: import.meta.env.VITE_CELO_HARVEST_LEDGER || ZERO,
-    farmerMarket: import.meta.env.VITE_CELO_FARMER_MARKET || ZERO,
-    verifier: import.meta.env.VITE_CELO_VERIFIER || ZERO,
-    industryMarkRegistry: import.meta.env.VITE_CELO_INDUSTRY_MARK_REGISTRY || ZERO,
-    newsBulletin: ZERO,
-    gasSubsidyPool: ZERO,
-    disputeResolution: ZERO,
-    reputationSystem: ZERO,
-    priceOracle: ZERO,
-    multiSigTreasury: ZERO,
-    token: TOKEN_ADDRESSES[42220],
-  },
+  42220: celoMainnetAddresses(),
   // Local Hardhat
   31337: {
     harvestLedger: import.meta.env.VITE_LOCAL_HARVEST_LEDGER || ZERO,

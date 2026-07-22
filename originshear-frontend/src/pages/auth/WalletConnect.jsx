@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount, useConnect, useSignMessage } from "wagmi";
 import { useNetworkGuard } from "../../hooks/useNetworkGuard";
+import { DEFAULT_CHAIN } from "../../lib/wagmiConfig";
 import { authenticateApiSession } from "../../lib/apiAuth";
 import { apiClient } from "../../lib/apiClient";
 import TopAppBar from "../../components/nav/TopAppBar";
@@ -173,7 +174,7 @@ export default function WalletConnect() {
         )}
         {isConnected && chainId && isWrongNetwork && (
           <p className="mt-2 text-body-sm text-error text-center">
-            Wrong network detected. Please switch to Celo Sepolia.
+            Wrong network detected. Please switch to {DEFAULT_CHAIN.name}.
           </p>
         )}
 

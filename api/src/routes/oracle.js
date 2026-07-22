@@ -1,5 +1,6 @@
 const express = require("express");
 const { ethers } = require("ethers");
+const { getProvider } = require("../lib/rpc");
 
 const router = express.Router();
 
@@ -7,12 +8,6 @@ const PRICE_ORACLE_MIN_ABI = [
   "function getSuggestedPrice(uint8 fibreType, uint8 grade, uint32 weightGrams) view returns (uint256)",
   "function getCurrentPrice(uint8 fibreType, uint8 grade) view returns (uint256 pricePerKgWei, uint256 timestamp)",
 ];
-
-function getProvider() {
-  const rpcUrl =
-    process.env.CELO_SEPOLIA_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org";
-  return new ethers.JsonRpcProvider(rpcUrl);
-}
 
 function getOracleContract(provider) {
   const address = process.env.PRICE_ORACLE_ADDRESS;

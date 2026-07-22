@@ -1,0 +1,100 @@
+name: CD
+
+# Deploy frontend after CI succeeds on main (or manual dispatch).
+# Optional Vercel publish when VERCEL_TOKEN + VERCEL_ORG_ID + VERCEL_PROJECT_ID are set.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      network:
+        description: "Target chain (celoSepolia or celo)"
+        required: true
+        default: "celoSepolia"
+        type: choice
+        options:
+          - celoSepolia
+          - celo
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-frontend:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    env:
+      NETWORK: ${{ github.event_name == 'workflow_dispatch' && inputs.network || vars.CHAIN_NETWORK || 'celoSepolia' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Build frontend (network-aware)
+        env:
+          VITE_CHAIN_NETWORK: ${{ env.NETWORK }}
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'http://localhost:3000' }}
+          VITE_CELO_SEPOLIA_RPC_URL: ${{ vars.VITE_CELO_SEPOLIA_RPC_URL || 'https://forno.celo-sepolia.celo-testnet.org' }}
+          VITE_CELO_RPC_URL: ${{ vars.VITE_CELO_RPC_URL || 'https://forno.celo.org' }}
+          VITE_IPFS_GATEWAY: ${{ vars.VITE_IPFS_GATEWAY || 'https://ipfs.io/ipfs' }}
+          VITE_DEV_BYPASS_ROLE_GUARDS: "false"
+          VITE_WALLETCONNECT_PROJECT_ID: ${{ secrets.VITE_WALLETCONNECT_PROJECT_ID }}
+          VITE_CELO_SEPOLIA_HARVEST_LEDGER: ${{ vars.VITE_CELO_SEPOLIA_HARVEST_LEDGER }}
+          VITE_CELO_SEPOLIA_FARMER_MARKET: ${{ vars.VITE_CELO_SEPOLIA_FARMER_MARKET }}
+          VITE_CELO_SEPOLIA_VERIFIER: ${{ vars.VITE_CELO_SEPOLIA_VERIFIER }}
+          VITE_CELO_SEPOLIA_INDUSTRY_MARK_REGISTRY: ${{ vars.VITE_CELO_SEPOLIA_INDUSTRY_MARK_REGISTRY }}
+          VITE_CELO_SEPOLIA_NEWS_BULLETIN: ${{ vars.VITE_CELO_SEPOLIA_NEWS_BULLETIN }}
+          VITE_CELO_SEPOLIA_GAS_SUBSIDY_POOL: ${{ vars.VITE_CELO_SEPOLIA_GAS_SUBSIDY_POOL }}
+          VITE_CELO_SEPOLIA_DISPUTE_RESOLUTION: ${{ vars.VITE_CELO_SEPOLIA_DISPUTE_RESOLUTION }}
+          VITE_CELO_SEPOLIA_REPUTATION_SYSTEM: ${{ vars.VITE_CELO_SEPOLIA_REPUTATION_SYSTEM }}
+          VITE_CELO_SEPOLIA_PRICE_ORACLE: ${{ vars.VITE_CELO_SEPOLIA_PRICE_ORACLE }}
+          VITE_CELO_SEPOLIA_MULTI_SIG_TREASURY: ${{ vars.VITE_CELO_SEPOLIA_MULTI_SIG_TREASURY }}
+          VITE_CELO_HARVEST_LEDGER: ${{ vars.VITE_CELO_HARVEST_LEDGER }}
+          VITE_CELO_FARMER_MARKET: ${{ vars.VITE_CELO_FARMER_MARKET }}
+          VITE_CELO_VERIFIER: ${{ vars.VITE_CELO_VERIFIER }}
+          VITE_CELO_INDUSTRY_MARK_REGISTRY: ${{ vars.VITE_CELO_INDUSTRY_MARK_REGISTRY }}
+          VITE_CELO_NEWS_BULLETIN: ${{ vars.VITE_CELO_NEWS_BULLETIN }}
+          VITE_CELO_GAS_SUBSIDY_POOL: ${{ vars.VITE_CELO_GAS_SUBSIDY_POOL }}
+          VITE_CELO_DISPUTE_RESOLUTION: ${{ vars.VITE_CELO_DISPUTE_RESOLUTION }}
+          VITE_CELO_REPUTATION_SYSTEM: ${{ vars.VITE_CELO_REPUTATION_SYSTEM }}
+          VITE_CELO_PRICE_ORACLE: ${{ vars.VITE_CELO_PRICE_ORACLE }}
+          VITE_CELO_MULTI_SIG_TREASURY: ${{ vars.VITE_CELO_MULTI_SIG_TREASURY }}
+        run: npm run build
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist-${{ env.NETWORK }}
+          path: originshear-frontend/dist
+          retention-days: 14
+
+      - name: Deploy to Vercel (optional)
+        if: ${{ vars.ENABLE_VERCEL_DEPLOY == 'true' }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          npx vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          npx vercel build --prod --token="$VERCEL_TOKEN"
+          npx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"

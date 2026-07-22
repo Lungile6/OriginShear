@@ -3,6 +3,7 @@ const { body, validationResult } = require("express-validator");
 const { ethers } = require("ethers");
 const { authenticate } = require("../middleware/auth");
 const { requireGovernmentRole } = require("../middleware/onchainAuth");
+const { getProvider } = require("../lib/rpc");
 
 const router = express.Router();
 
@@ -26,11 +27,9 @@ function getRelayerSigner() {
     err.status = 501;
     throw err;
   }
-  const rpcUrl = process.env.CELO_SEPOLIA_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org";
-  const provider = new ethers.JsonRpcProvider(rpcUrl);
   return new ethers.Wallet(
     privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`,
-    provider
+    getProvider()
   );
 }
 
@@ -74,10 +73,7 @@ router.get("/", async (req, res) => {
     const cached = req.cache.get(cacheKey);
     if (cached) return res.json(cached);
 
-    const rpcUrl =
-      process.env.CELO_SEPOLIA_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org";
-    const provider = new ethers.JsonRpcProvider(rpcUrl);
-    const contract = getNewsContract(provider);
+    const contract = getNewsContract(getProvider());
 
     const raw = await contract.getActiveBulletins();
     const items = raw

@@ -1,5 +1,5 @@
 import { useChainId, useReadContract } from "wagmi";
-import { celoSepolia } from "../../lib/wagmiConfig";
+import { DEFAULT_CHAIN_ID } from "../../lib/wagmiConfig";
 import { VERIFIER_ABI } from "../../contracts/ProofOfOriginVerifier";
 import { FibreTypeLabel, GradeLabel } from "../../contracts/HarvestLedger";
 import { getContractAddresses } from "../../contracts/addresses";
@@ -20,7 +20,7 @@ export default function LotVerificationPanel({
   chainId: chainIdProp,
 }) {
   const connectedChainId = useChainId();
-  const chainId = chainIdProp || connectedChainId || celoSepolia.id;
+  const chainId = chainIdProp || connectedChainId || DEFAULT_CHAIN_ID;
   const addresses = getContractAddresses(chainId);
 
   const { data: result, isLoading, isError, error } = useReadContract({

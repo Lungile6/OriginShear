@@ -1,27 +1,27 @@
 import { useAccount, useSwitchChain } from "wagmi";
-import { celoSepolia } from "../lib/wagmiConfig";
+import { DEFAULT_CHAIN } from "../lib/wagmiConfig";
 
-const CELO_SEPOLIA_PARAMS = {
-  chainId: `0x${celoSepolia.id.toString(16)}`,
-  chainName: celoSepolia.name,
-  nativeCurrency: celoSepolia.nativeCurrency,
-  rpcUrls: celoSepolia.rpcUrls.default.http,
-  blockExplorerUrls: [celoSepolia.blockExplorers.default.url],
+const TARGET_CHAIN_PARAMS = {
+  chainId: `0x${DEFAULT_CHAIN.id.toString(16)}`,
+  chainName: DEFAULT_CHAIN.name,
+  nativeCurrency: DEFAULT_CHAIN.nativeCurrency,
+  rpcUrls: DEFAULT_CHAIN.rpcUrls.default.http,
+  blockExplorerUrls: [DEFAULT_CHAIN.blockExplorers.default.url],
 };
 
 /**
- * Shared network guard for Celo Sepolia.
+ * Shared network guard for the active app chain (Sepolia or mainnet via VITE_CHAIN_NETWORK).
  * Attempts switch first, then falls back to wallet_addEthereumChain when missing.
  */
 export function useNetworkGuard() {
   const { chainId } = useAccount();
   const { switchChainAsync, isPending } = useSwitchChain();
 
-  const isWrongNetwork = Boolean(chainId) && chainId !== celoSepolia.id;
+  const isWrongNetwork = Boolean(chainId) && chainId !== DEFAULT_CHAIN.id;
 
   async function fixNetwork() {
     try {
-      await switchChainAsync({ chainId: celoSepolia.id });
+      await switchChainAsync({ chainId: DEFAULT_CHAIN.id });
       return { ok: true };
     } catch (err) {
       const code = err?.cause?.code ?? err?.code;
@@ -29,9 +29,9 @@ export function useNetworkGuard() {
         try {
           await window.ethereum.request({
             method: "wallet_addEthereumChain",
-            params: [CELO_SEPOLIA_PARAMS],
+            params: [TARGET_CHAIN_PARAMS],
           });
-          await switchChainAsync({ chainId: celoSepolia.id });
+          await switchChainAsync({ chainId: DEFAULT_CHAIN.id });
           return { ok: true };
         } catch (addErr) {
           return { ok: false, error: addErr };
