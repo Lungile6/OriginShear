@@ -55,21 +55,36 @@ if (prefix === "VITE_LOCAL") {
   frontendUpdates.VITE_LOCAL_MOCK_CUSD = deployment.cUSD;
 }
 
-const apiUpdates =
-  network === "celoSepolia" || network === "localhost" || network === "hardhat"
-    ? {
-        HARVEST_LEDGER_ADDRESS: deployment.HarvestLedger,
-        FARMER_MARKET_ADDRESS: deployment.FarmerMarket,
-        PROOF_OF_ORIGIN_VERIFIER_ADDRESS: deployment.ProofOfOriginVerifier,
-        INDUSTRY_MARK_REGISTRY_ADDRESS: deployment.IndustryMarkRegistry,
-        NEWS_BULLETIN_ADDRESS: deployment.NewsBulletin,
-        GAS_SUBSIDY_POOL_ADDRESS: deployment.GasSubsidyPool,
-        DISPUTE_RESOLUTION_ADDRESS: deployment.DisputeResolution,
-        REPUTATION_SYSTEM_ADDRESS: deployment.ReputationSystem,
-        PRICE_ORACLE_ADDRESS: deployment.PriceOracle,
-        MULTI_SIG_TREASURY_ADDRESS: deployment.MultiSigTreasury,
-      }
-    : null;
+// Point the app at the network you just synced.
+if (network === "celoSepolia" || network === "celo") {
+  frontendUpdates.VITE_CHAIN_NETWORK = network;
+}
+
+const syncApiAddresses =
+  network === "celoSepolia" ||
+  network === "celo" ||
+  network === "localhost" ||
+  network === "hardhat";
+
+const apiUpdates = syncApiAddresses
+  ? {
+      CHAIN_NETWORK: network === "celo" ? "celo" : "celoSepolia",
+      HARVEST_LEDGER_ADDRESS: deployment.HarvestLedger,
+      FARMER_MARKET_ADDRESS: deployment.FarmerMarket,
+      PROOF_OF_ORIGIN_VERIFIER_ADDRESS: deployment.ProofOfOriginVerifier,
+      INDUSTRY_MARK_REGISTRY_ADDRESS: deployment.IndustryMarkRegistry,
+      NEWS_BULLETIN_ADDRESS: deployment.NewsBulletin,
+      GAS_SUBSIDY_POOL_ADDRESS: deployment.GasSubsidyPool,
+      DISPUTE_RESOLUTION_ADDRESS: deployment.DisputeResolution,
+      REPUTATION_SYSTEM_ADDRESS: deployment.ReputationSystem,
+      PRICE_ORACLE_ADDRESS: deployment.PriceOracle,
+      MULTI_SIG_TREASURY_ADDRESS: deployment.MultiSigTreasury,
+    }
+  : null;
+
+if (apiUpdates && (network === "localhost" || network === "hardhat")) {
+  apiUpdates.CHAIN_NETWORK = "celoSepolia";
+}
 
 function mergeEnvFile(targetFile, exampleFile, updates) {
   const baseEnv = fs.existsSync(targetFile)
