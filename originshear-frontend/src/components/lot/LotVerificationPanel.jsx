@@ -34,7 +34,8 @@ export default function LotVerificationPanel({
   if (!lotId || !proof) {
     return (
       <p className="text-label-sm text-on-surface-variant">
-        Scan the QR code on a wool/mohair lot, or paste its lot ID and proof hash above.
+        Scan the QR on a bale tag (fills both fields), or ask the farmer for Lot ID and proof hash
+        from <span className="font-semibold">My Lots → View QR Proof</span>.
       </p>
     );
   }

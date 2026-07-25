@@ -5,7 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 import AppLayout from "../../layouts/AppLayout";
 import { HARVEST_LEDGER_ABI, FibreTypeLabel, GradeLabel, LotStatus } from "../../contracts/HarvestLedger";
 import { getContractAddresses } from "../../contracts/addresses";
-import { gramsToKg, shorten } from "../../lib/utils";
+import { gramsToKg } from "../../lib/utils";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import Icon from "../../components/ui/Icon";
@@ -42,7 +42,7 @@ export default function QRProofOfOrigin() {
     );
   }
 
-  const verifyUrl = `${window.location.origin}/buyer/verify/lot/${lotId}?proof=${lot.proofOfOrigin}`;
+  const verifyUrl = `${window.location.origin}/verify/lot/${lotId}?proof=${lot.proofOfOrigin}`;
 
   return (
     <AppLayout role="FARMER" title="ORIGINSHEAR">
@@ -51,9 +51,22 @@ export default function QRProofOfOrigin() {
           <div className="flex justify-between items-start mb-2">
             <div>
               <span className="text-label-sm text-on-surface-variant uppercase tracking-wider">
-                Lot Identifier
+                Lot ID (for verify)
               </span>
-              <h2 className="text-headline-sm font-bold text-primary">#{lotId}</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-headline-sm font-bold text-primary">#{lotId}</h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(String(lotId));
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 1500);
+                  }}
+                  className="text-primary text-label-sm font-semibold"
+                >
+                  Copy ID
+                </button>
+              </div>
             </div>
             {lot.status === LotStatus.VALIDATED && (
               <span className="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-label-sm font-semibold flex items-center gap-1">
@@ -74,6 +87,10 @@ export default function QRProofOfOrigin() {
         </Card>
 
         <Card className="w-full flex flex-col items-center p-stack-lg mb-stack-md">
+          <p className="text-body-sm text-on-surface-variant text-center mb-3">
+            Buyers scan this QR — or paste Lot ID + proof hash on{" "}
+            <span className="font-semibold text-on-surface">/verify</span>
+          </p>
           <div className="bg-white p-4 border-2 border-primary rounded-2xl mb-4">
             <QRCodeSVG
               value={verifyUrl}
@@ -85,7 +102,7 @@ export default function QRProofOfOrigin() {
             />
           </div>
           <label className="text-label-sm text-on-surface-variant block mb-1 w-full text-center">
-            Blockchain Proof Hash
+            Proof hash (tap to copy full value)
           </label>
           <button
             type="button"
@@ -93,7 +110,7 @@ export default function QRProofOfOrigin() {
             className="w-full bg-surface-container flex items-center justify-between px-3 py-2 rounded-lg border border-outline-variant group"
           >
             <code className="text-body-sm text-primary font-mono truncate mr-2 select-all">
-              {shorten(lot.proofOfOrigin, 10, 6)}
+              {lot.proofOfOrigin}
             </code>
             <Icon name="content_copy" size={18} className="text-primary shrink-0" />
           </button>
