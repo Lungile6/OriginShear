@@ -11,8 +11,10 @@ This repository is submitted for implementation and testing demonstration.
 ```
 OriginShear/
 ├── originshear-contracts/   # Solidity contracts, tests, deployment scripts
-├── originshear-frontend/    # React + Vite web app
-├── api/                     # Backend API (auth, lots, market, marks, IPFS, subsidy, disputes…)
+├── originshear-frontend/    # React + Vite web app (Vercel)
+├── api/                     # Backend API — Docker on Render
+├── docker-compose.yml       # Local API + frontend containers
+├── render.yaml              # Render Blueprint for the API
 ├── ipfs/                    # IPFS integration notes and helpers
 ├── subgraph/                # The Graph indexing layer
 ├── scripts/
@@ -140,12 +142,6 @@ GRAPHQL_ENDPOINT=https://api.studio.thegraph.com/query/1756052/origin-shear/v0.0
 IPFS_DEV_FALLBACK=true
 ```
 
-For **easiest local UI testing without on-chain roles**, you can also add:
-
-```env
-DEV_BYPASS_ROLE_GUARDS=true
-```
-
 > Never commit `api/.env` — it is gitignored.
 
 ### 3. Configure the frontend
@@ -157,21 +153,21 @@ cp originshear-frontend/.env.example originshear-frontend/.env
 npm run sync:addresses celoSepolia
 ```
 
-Optionally for local role testing (unlocks all role routes):
-
-```env
-VITE_DEV_BYPASS_ROLE_GUARDS=true
-```
-
 Optional WalletConnect (Valora / mobile QR):
 
 ```env
 VITE_WALLETCONNECT_PROJECT_ID=<from https://cloud.walletconnect.com>
 ```
 
-### 4. Grant demo roles (production-style testing)
+### 4. Grant roles (Admin UI — preferred after deploy)
 
-Without role bypass, each wallet needs the matching on-chain role. From **repo root**:
+Connect the **deployer / admin** wallet (holds `DEFAULT_ADMIN_ROLE`) in the app:
+
+1. Role select → **Administrator** → `/admin`
+2. Look up a user’s wallet → **Register farmer** or **Grant / Revoke** Validator / Government
+3. That user connects the same wallet → only their granted role dashboards open
+
+Optional CLI bootstrap (same on-chain grants as the Admin panel):
 
 ```bash
 FARMER_ADDRESS=0xYourFarmerWallet \
@@ -225,7 +221,8 @@ The app uses **whichever MetaMask account is currently selected**. It does not p
 
 | Role card | Needs on-chain role | If wrong wallet |
 |-----------|---------------------|-----------------|
-| Wool & Mohair Farmer | `FARMER_ROLE` (via `seed:roles`) | Onboarding / pending |
+| Administrator | `DEFAULT_ADMIN_ROLE` (deployer) | Unauthorized |
+| Wool & Mohair Farmer | `FARMER_ROLE` (Admin panel or `seed:roles`) | Onboarding / pending |
 | LNWMGA Validator | `VALIDATOR_ROLE` | Validator pending |
 | Government | `GOVERNMENT_ROLE` on marks/news | Government pending |
 | Buyer / Verifier | none | Always available when connected |
@@ -241,6 +238,7 @@ To switch roles: change account in MetaMask → refresh → Connect again → ch
 | **Buyer** | Marketplace → purchase (approve cUSD) → purchase history → rate farmer |
 | **Public** | `/verify` or `/buyer/verify` — verify by lot ID + proof hash |
 | **Government** | Issue/revoke industry marks · compose news bulletin |
+| **Administrator** | `/admin` — register farmers, grant/revoke Farmer / Validator / Government |
 | **Advanced** | Farmer gas subsidy claim · open dispute while offer is IN_ESCROW |
 
 ---
@@ -289,13 +287,17 @@ Also set `RELAYER_PRIVATE_KEY` in `api/.env` to the same deployer key (for relay
 
 ### 4. Grant on-chain roles
 
+**Preferred:** connect the deployer wallet → Role select → **Administrator** → grant roles in the UI.
+
+Optional CLI (same grants):
+
 ```bash
 FARMER_ADDRESS=0x... VALIDATOR_ADDRESS=0x... GOVERNMENT_ADDRESS=0x... npm run seed:roles
 ```
 
-Without `DEV_BYPASS_ROLE_GUARDS`:
+Role grants:
 
-- **Farmer**: `registerFarmer` / `FARMER_ROLE` (+ `FARMER_ROLE` on GasSubsidyPool via seed)
+- **Farmer**: `registerFarmer` / `FARMER_ROLE` (+ `FARMER_ROLE` on GasSubsidyPool)
 - **Validator**: `VALIDATOR_ROLE` on HarvestLedger + FarmerMarket (+ `ARBITER_ROLE` on DisputeResolution)
 - **Government**: `GOVERNMENT_ROLE` on IndustryMarkRegistry + NewsBulletin (+ GasSubsidyPool)
 
@@ -334,7 +336,6 @@ Update `GRAPHQL_ENDPOINT` in `api/.env` to the new Studio query URL.
 | `GRAPHQL_ENDPOINT` | Recommended | The Graph subgraph URL |
 | `RELAYER_PRIVATE_KEY` | For relayed writes | Deployer/admin key |
 | `IPFS_DEV_FALLBACK` | Dev | `true` = local metadata store when IPFS fails |
-| `DEV_BYPASS_ROLE_GUARDS` | Dev only | Skip validator/government role checks |
 
 \*Required for on-chain reads/writes. Prefer `npm run sync:addresses celoSepolia` over hand-editing.
 
@@ -347,7 +348,6 @@ See `api/.env.example` for the full list including IPFS options (Pinata, Infura 
 | `VITE_API_BASE_URL` | Yes | API base URL (default `http://localhost:3000`) |
 | `VITE_CELO_SEPOLIA_RPC_URL` | Recommended | RPC for wagmi/viem |
 | `VITE_CELO_SEPOLIA_*` | Yes | Contract addresses (synced from deployments) |
-| `VITE_DEV_BYPASS_ROLE_GUARDS` | Dev only | Unlock all role routes locally |
 | `VITE_WALLETCONNECT_PROJECT_ID` | Optional | Enables WalletConnect connector |
 | `VITE_IPFS_GATEWAY` | Optional | Public IPFS gateway for metadata links |
 
@@ -400,7 +400,6 @@ npm run use:mainnet
 # Then restart API + frontend (or redeploy hosts) with:
 #   CHAIN_NETWORK=celo
 #   VITE_CHAIN_NETWORK=celo
-#   DEV_BYPASS / VITE_DEV_BYPASS_ROLE_GUARDS=false
 ```
 
 ---
@@ -421,6 +420,65 @@ NODE_ENV=production npm start
 
 ---
 
+## Containers & cloud deploy (Render + Vercel)
+
+Recommended split:
+
+| Piece | Platform | How it runs |
+|-------|----------|-------------|
+| **API** (`api/`) | [Render](https://render.com) | Docker image (`api/Dockerfile`) via `render.yaml` |
+| **Frontend** (`originshear-frontend/`) | [Vercel](https://vercel.com) | Native Vite build (`vercel.json`) — not Docker |
+
+Vercel is for static/SPA builds; it does **not** run your Express API. Put the API on Render in Docker.
+
+### Local Docker (full stack)
+
+Requires Docker Desktop. From `OriginShear/`:
+
+```bash
+# Ensure api/.env exists (see Quick Start). Optionally copy compose env:
+cp .env.docker.example .env
+
+# Build + run API (:3000) and nginx frontend (:8080)
+npm run docker:up
+```
+
+- Web: http://localhost:8080  
+- API health: http://localhost:3000/health  
+- Stop: `npm run docker:down`
+
+Set `VITE_*` contract addresses in `.env` (or `originshear-frontend/.env`) **before** `docker compose up --build` — Vite bakes them into the image at build time.
+
+### Render (API)
+
+1. Push this repo to GitHub.
+2. Render → **New** → **Blueprint** → select `render.yaml`.
+3. Fill **sync: false** env vars in the dashboard (at minimum):
+   - `JWT_SECRET`, `RELAYER_PRIVATE_KEY`
+   - Contract addresses (`HARVEST_LEDGER_ADDRESS`, …) — same as local `api/.env`
+   - `GRAPHQL_ENDPOINT`
+   - `PINATA_JWT` (recommended) and keep `IPFS_DEV_FALLBACK=false`
+   - `FRONTEND_URL` = your Vercel URL (e.g. `https://originshear.vercel.app`)
+   - `API_PUBLIC_URL` = this Render service URL
+4. Deploy. Confirm `GET /health` returns `{ "status": "ok", ... }`.
+
+Manual Docker service (without Blueprint): Root Directory blank, Dockerfile path `./api/Dockerfile`, Docker context `./api`, health check `/health`.
+
+### Vercel (frontend)
+
+1. Import the repo in Vercel.
+2. Set **Root Directory** to `originshear-frontend`.
+3. Env vars (Production): at least `VITE_API_BASE_URL` = your Render API URL, plus `VITE_CHAIN_NETWORK` and all `VITE_CELO_SEPOLIA_*` addresses.
+4. Deploy. SPA routing is already handled by `vercel.json` rewrites.
+
+Cross-link checklist after both are live:
+
+1. Render `FRONTEND_URL` → Vercel origin (CORS).
+2. Vercel `VITE_API_BASE_URL` → Render API origin (no trailing slash).
+3. Redeploy the frontend if you change any `VITE_*` value (they are compile-time).
+
+---
+
 ## Troubleshooting
 
 | Problem | Fix |
@@ -428,7 +486,7 @@ NODE_ENV=production npm start
 | **`Missing script: "seed:roles"`** | You are not in `OriginShear/` — `cd` into the folder that contains root `package.json` |
 | **Frontend can't reach API** | API on port 3000; `VITE_API_BASE_URL=http://localhost:3000` |
 | **Wrong network** | MetaMask → Celo Sepolia (chain ID `11142220`) |
-| **Unauthorized / pending role** | Select the wallet that was seeded for that role, or set `VITE_DEV_BYPASS_ROLE_GUARDS=true` / `DEV_BYPASS_ROLE_GUARDS=true` for local UI-only testing |
+| **Unauthorized / pending role** | Ask an admin to grant access in **Administrator → Access control**, or use the wallet that was granted that role |
 | **`balanceOf` / cUSD errors** | Use Sepolia Mento cUSD `0xdE9e4C3c…`, not Alfajores `0x8740…`; redeploy if contracts were built with the wrong token |
 | **IPFS upload failed** | Set `IPFS_DEV_FALLBACK=true` in `api/.env` |
 | **Marketplace empty** | Subgraph may lag or still index old addresses — check `GRAPHQL_ENDPOINT` / redeploy subgraph |
