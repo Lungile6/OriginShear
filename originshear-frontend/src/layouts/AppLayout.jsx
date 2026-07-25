@@ -1,7 +1,7 @@
 import TopAppBar from "../components/nav/TopAppBar";
 import { useApiAuth } from "../hooks/useApiAuth";
 
-const PROTECTED_ROLES = new Set(["FARMER", "VALIDATOR", "GOVERNMENT"]);
+const PROTECTED_ROLES = new Set(["FARMER", "VALIDATOR", "GOVERNMENT", "ADMIN"]);
 
 /**
  * Shared chrome for all authenticated, role-bound screens: fixed top app

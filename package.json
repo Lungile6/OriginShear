@@ -16,17 +16,24 @@
     "assess:test-strategies": "npm run test && npm run test:api",
     "assess:test-data-values": "npm --prefix api run test:data-values",
     "assess:perf": "node scripts/perf-api.js",
+    "smoke": "NODE_PATH=./api/node_modules node scripts/smoke-test.js",
     "compile": "npm run compile --workspace=originshear-contracts",
     "node": "npm run node --workspace=originshear-contracts",
     "deploy:local": "npm run deploy:local --workspace=originshear-contracts",
     "deploy:celo-sepolia": "npm run deploy:celo-sepolia --workspace=originshear-contracts",
     "deploy:celo": "npm run deploy:celo --workspace=originshear-contracts",
     "sync:addresses": "node scripts/sync-deployments.js",
+    "use:sepolia": "node scripts/sync-deployments.js celoSepolia",
+    "use:mainnet": "node scripts/sync-deployments.js celo",
     "sync:subgraph": "node scripts/sync-subgraph.js",
     "subgraph:build": "npm --prefix subgraph run codegen && npm --prefix subgraph run build",
     "subgraph:deploy": "npm run sync:subgraph celoSepolia && npm run subgraph:build && npm --prefix subgraph exec graph deploy --studio origin-shear --version-label",
     "seed:farmer": "NODE_PATH=./api/node_modules node scripts/seed-demo.js",
     "seed:roles": "NODE_PATH=./api/node_modules node scripts/seed-demo.js",
-    "seed:advanced": "NODE_PATH=./api/node_modules SEED_ADVANCED_ONLY=true node scripts/seed-demo.js --advanced"
+    "seed:advanced": "NODE_PATH=./api/node_modules SEED_ADVANCED_ONLY=true node scripts/seed-demo.js --advanced",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:api": "docker compose up --build api",
+    "docker:logs": "docker compose logs -f"
   }
 }

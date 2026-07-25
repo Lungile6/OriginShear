@@ -17,6 +17,8 @@ const subsidyRoutes = require("./routes/subsidy");
 const disputeRoutes = require("./routes/disputes");
 const oracleRoutes = require("./routes/oracle");
 const reputationRoutes = require("./routes/reputation");
+const accessRequestRoutes = require("./routes/accessRequests");
+const adminRoutes = require("./routes/admin");
 
 const app = express();
 
@@ -95,6 +97,8 @@ app.use("/api/subsidy", subsidyRoutes);
 app.use("/api/disputes", disputeRoutes);
 app.use("/api/oracle", oracleRoutes);
 app.use("/api/reputation", reputationRoutes);
+app.use("/api/access-requests", accessRequestRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -111,9 +115,11 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+// Bind 0.0.0.0 so the process accepts traffic inside Docker / Render
+const HOST = process.env.HOST || '0.0.0.0';
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`ORIGINSHEAR API running on port ${PORT}`);
+  app.listen(PORT, HOST, () => {
+    console.log(`ORIGINSHEAR API running on http://${HOST}:${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 }

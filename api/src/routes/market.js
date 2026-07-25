@@ -4,6 +4,7 @@ const { authenticate } = require('../middleware/auth');
 const { requireValidatorRole } = require('../middleware/onchainAuth');
 const { querySubgraph } = require('../lib/subgraph');
 const { ethers } = require('ethers');
+const { getProvider } = require('../lib/rpc');
 
 const router = express.Router();
 const OFFER_STATUS = {
@@ -15,7 +16,72 @@ const OFFER_STATUS = {
 
 const FARMER_MARKET_MIN_ABI = [
   "function releasePayment(uint256 offerId)",
+  "function lotToOffer(uint256 lotId) view returns (uint256)",
+  "function offers(uint256) view returns (uint256 offerId, uint256 lotId, address farmer, uint256 askPriceWei, address buyer, uint256 escrowAmount, uint8 status, uint256 listedAt, uint256 completedAt)",
 ];
+
+const HARVEST_LEDGER_MARKET_ABI = [
+  "function totalLots() view returns (uint256)",
+  "function getLot(uint256 lotId) view returns (tuple(uint256 lotId, address farmer, uint8 fibreType, uint8 grade, uint32 weightGrams, string gpsZone, string seasonYear, bytes32 proofOfOrigin, uint8 status, uint256 registeredAt, uint256 validatedAt, address validatedBy, string metadataURI))",
+];
+
+const MAX_ONCHAIN_LOT_SCAN = 200;
+
+async function fetchOffersFromChain(statusFilter) {
+  const ledgerAddress = process.env.HARVEST_LEDGER_ADDRESS;
+  const marketAddress = process.env.FARMER_MARKET_ADDRESS;
+  if (!ledgerAddress || !marketAddress) {
+    return [];
+  }
+
+  const provider = getProvider();
+  const ledger = new ethers.Contract(ledgerAddress, HARVEST_LEDGER_MARKET_ABI, provider);
+  const market = new ethers.Contract(marketAddress, FARMER_MARKET_MIN_ABI, provider);
+
+  const total = Number(await ledger.totalLots());
+  const scan = Math.min(total, MAX_ONCHAIN_LOT_SCAN);
+  const offers = [];
+
+  for (let lotId = 1; lotId <= scan; lotId++) {
+    const lot = await ledger.getLot(lotId);
+    // VALIDATED only — marketplace inventory
+    if (Number(lot.status) !== 1) continue;
+
+    const offerId = await market.lotToOffer(lotId);
+    if (offerId === 0n) continue;
+
+    const offer = await market.offers(offerId);
+    const status = Number(offer.status);
+    if (statusFilter !== undefined && status !== statusFilter) continue;
+
+    offers.push({
+      id: offer.offerId.toString(),
+      offerId: offer.offerId.toString(),
+      askPriceWei: offer.askPriceWei.toString(),
+      buyer: offer.buyer,
+      escrowAmount: offer.escrowAmount.toString(),
+      status,
+      listedAt: offer.listedAt.toString(),
+      completedAt: offer.completedAt.toString(),
+      farmer: { id: offer.farmer.toLowerCase(), wallet: offer.farmer },
+      lot: {
+        id: lot.lotId.toString(),
+        lotId: lot.lotId.toString(),
+        fibreType: Number(lot.fibreType),
+        grade: Number(lot.grade),
+        weightGrams: lot.weightGrams.toString(),
+        gpsZone: lot.gpsZone,
+        seasonYear: lot.seasonYear,
+        proofOfOrigin: lot.proofOfOrigin,
+        status: Number(lot.status),
+      },
+      source: "onchain",
+    });
+  }
+
+  offers.sort((a, b) => Number(b.listedAt) - Number(a.listedAt));
+  return offers;
+}
 
 function parsePagination(query) {
   const page = Math.max(parseInt(query.page || 1, 10), 1);
@@ -39,9 +105,10 @@ function getRelayerSigner() {
     err.status = 501;
     throw err;
   }
-  const rpcUrl = process.env.CELO_SEPOLIA_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org";
-  const provider = new ethers.JsonRpcProvider(rpcUrl);
-  return new ethers.Wallet(privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`, provider);
+  return new ethers.Wallet(
+    privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`,
+    getProvider()
+  );
 }
 
 function invalidateMarketCache(cache) {
@@ -112,19 +179,34 @@ router.get('/offers', async (req, res) => {
       }
     `;
 
-    const [offersData, countData] = await Promise.all([
-      querySubgraph(offersQuery, { first: limit, skip, where }),
-      querySubgraph(countQuery, { where }),
-    ]);
-    const total = countData.offers.length;
+    let rows = [];
+    let total = 0;
+
+    try {
+      const [offersData, countData] = await Promise.all([
+        querySubgraph(offersQuery, { first: limit, skip, where }),
+        querySubgraph(countQuery, { where }),
+      ]);
+      rows = offersData.offers || [];
+      total = (countData.offers || []).length;
+    } catch (subgraphError) {
+      console.warn("Market offers subgraph unavailable, using on-chain fallback:", subgraphError.message);
+    }
+
+    // Subgraph often lags or sits empty after redeploy — fall back to RPC.
+    if (rows.length === 0) {
+      const onchain = await fetchOffersFromChain(parsedStatus);
+      total = onchain.length;
+      rows = onchain.slice(skip, skip + limit);
+    }
 
     const offers = {
-      data: offersData.offers,
+      data: rows,
       pagination: {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(total / limit) || 0,
       }
     };
 

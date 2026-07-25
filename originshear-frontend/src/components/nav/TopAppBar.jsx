@@ -69,6 +69,8 @@ function homeForRole(role) {
       return "/government";
     case "BUYER":
       return "/buyer";
+    case "ADMIN":
+      return "/admin";
     default:
       return "/";
   }

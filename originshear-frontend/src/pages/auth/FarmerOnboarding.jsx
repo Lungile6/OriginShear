@@ -7,6 +7,7 @@ import TopAppBar from "../../components/nav/TopAppBar";
 import Button from "../../components/ui/Button";
 import Icon from "../../components/ui/Icon";
 import Card from "../../components/ui/Card";
+import ApplyForAccessButton from "../../components/auth/ApplyForAccessButton";
 
 export default function FarmerOnboarding() {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ export default function FarmerOnboarding() {
         <h1 className="text-headline-md font-bold mb-2">Almost there.</h1>
         <p className="text-body-md text-white/80">
           To participate in the national wool and mohair trade, your digital wallet must be
+          registered by an OriginShear administrator (Admin Access panel → Register farmer), or
           verified in person at your nearest LNWMGA district office.
         </p>
         <Button
@@ -62,7 +64,15 @@ export default function FarmerOnboarding() {
             </button>
           </div>
 
-          <p className="text-label-md text-on-surface-variant uppercase mb-2">Required at office</p>
+          <ApplyForAccessButton
+            requestedRole="FARMER"
+            variant="primary"
+            label="Apply for farmer access (notify admin)"
+          />
+
+          <p className="text-label-md text-on-surface-variant uppercase mb-2 mt-4">
+            Required at office
+          </p>
           <ul className="space-y-2 mb-1">
             {["National ID / Passport", "Shearing Records", "Mobile Phone", "Brand Certificate"].map(
               (item) => (

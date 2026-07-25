@@ -8,6 +8,7 @@ import TopAppBar from "../../components/nav/TopAppBar";
 import Button from "../../components/ui/Button";
 import Icon from "../../components/ui/Icon";
 import Card from "../../components/ui/Card";
+import ApplyForAccessButton from "../../components/auth/ApplyForAccessButton";
 
 export default function GovernmentPending() {
   const { address } = useAccount();
@@ -50,13 +51,20 @@ export default function GovernmentPending() {
             </button>
           </div>
 
+          <ApplyForAccessButton
+            requestedRole="GOVERNMENT"
+            variant="primary"
+            label="Apply for government access"
+          />
           <a href={address ? mailtoAdmin(address) : undefined} className="block mb-3">
-            <Button variant="primary" className="bg-role-government" icon={<Icon name="mail" />}>
-              Send this address to your administrator
+            <Button variant="outline" icon={<Icon name="mail" />}>
+              Or email the administrator
             </Button>
           </a>
           <p className="text-body-sm text-on-surface-variant text-center mb-4">
-            Please share your Celo wallet address with the LNWMGA system admin to grant your administrative authorization.
+            Applying puts your wallet in the Admin Access applications list. An administrator grants{" "}
+            <span className="font-semibold">GOVERNMENT_ROLE</span> from Look up wallet → Grant
+            government. Then tap Check again.
           </p>
 
           <div className="flex items-center gap-3 mb-4">

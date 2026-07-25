@@ -40,6 +40,13 @@ export const GAS_SUBSIDY_POOL_ABI = [
   },
   {
     type: "function",
+    name: "GOVERNMENT_ROLE",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "bytes32" }],
+  },
+  {
+    type: "function",
     name: "hasRole",
     stateMutability: "view",
     inputs: [
@@ -47,5 +54,25 @@ export const GAS_SUBSIDY_POOL_ABI = [
       { name: "account", type: "address" },
     ],
     outputs: [{ type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "grantRole",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "role", type: "bytes32" },
+      { name: "account", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "revokeRole",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "role", type: "bytes32" },
+      { name: "account", type: "address" },
+    ],
+    outputs: [],
   },
 ];

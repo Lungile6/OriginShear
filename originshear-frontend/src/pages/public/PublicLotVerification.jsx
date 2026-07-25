@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate, Link } from "react-router-dom";
 import LotVerificationPanel from "../../components/lot/LotVerificationPanel";
 import Icon from "../../components/ui/Icon";
 import Card from "../../components/ui/Card";
@@ -23,16 +23,29 @@ export default function PublicLotVerification() {
           <Icon name="grass" className="text-primary" />
           <span className="text-headline-sm font-bold text-primary uppercase">ORIGINSHEAR</span>
         </header>
-        <Card className="max-w-sm mx-auto">
-          <h1 className="text-headline-sm font-bold mb-4 flex items-center gap-2">
+        <Card className="max-w-sm mx-auto mb-4">
+          <h1 className="text-headline-sm font-bold mb-2 flex items-center gap-2">
             <Icon name="verified" className="text-primary" />
             Verify a Lot
           </h1>
+          <p className="text-body-sm text-on-surface-variant mb-4">
+            You need the <span className="font-semibold text-on-surface">Lot ID</span> and{" "}
+            <span className="font-semibold text-on-surface">proof hash</span> from the farmer.
+          </p>
+          <ol className="list-decimal pl-5 space-y-2 text-body-sm text-on-surface-variant mb-4">
+            <li>Scan the QR on the bale tag (best — fills both fields automatically).</li>
+            <li>
+              Or ask the farmer: <span className="font-semibold text-on-surface">My Lots</span> →
+              open the lot → <span className="font-semibold text-on-surface">View QR Proof</span>, then
+              copy Lot ID and Proof hash.
+            </li>
+          </ol>
           <FormField label="Lot ID">
             <input
               value={manualLotId}
               onChange={(e) => setManualLotId(e.target.value)}
               placeholder="e.g. 12"
+              inputMode="numeric"
               className={inputClassName}
             />
           </FormField>
@@ -42,10 +55,16 @@ export default function PublicLotVerification() {
               onChange={(e) => setManualProof(e.target.value)}
               placeholder="0x…"
               className={`${inputClassName} font-mono`}
+              spellCheck={false}
             />
           </FormField>
           <LotVerificationPanel lotId={manualLotId} proof={manualProof} showDownloadButton={false} />
         </Card>
+        <p className="text-center text-label-sm text-on-surface-variant">
+          <Link to="/" className="text-primary font-semibold">
+            Back to home
+          </Link>
+        </p>
       </div>
     );
   }
@@ -53,7 +72,7 @@ export default function PublicLotVerification() {
   return (
     <div className="min-h-dvh bg-background px-margin-mobile py-6">
       <header className="flex items-center gap-2 mb-6">
-        <button onClick={() => navigate("/")} className="text-on-surface-variant">
+        <button type="button" onClick={() => navigate("/")} className="text-on-surface-variant">
           <Icon name="account_circle" />
         </button>
         <span className="text-headline-sm font-bold text-primary uppercase">ORIGINSHEAR</span>

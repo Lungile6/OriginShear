@@ -18,6 +18,26 @@ export const INDUSTRY_MARK_REGISTRY_ABI = [
   },
   {
     type: "function",
+    name: "grantRole",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "role", type: "bytes32" },
+      { name: "account", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "revokeRole",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "role", type: "bytes32" },
+      { name: "account", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
     name: "issueMark",
     stateMutability: "nonpayable",
     inputs: [

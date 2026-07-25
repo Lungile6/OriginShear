@@ -11,10 +11,25 @@ const fs = require("fs");
 require("dotenv").config({ path: path.join(__dirname, "../api/.env") });
 
 const API_BASE = process.env.SMOKE_API_BASE || `http://127.0.0.1:${process.env.PORT || 3000}`;
-const RPC = process.env.CELO_SEPOLIA_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org";
+const CHAIN_NETWORK = (() => {
+  const raw = (process.env.CHAIN_NETWORK || "celoSepolia").trim();
+  if (raw === "celo" || raw === "mainnet") return "celo";
+  return "celoSepolia";
+})();
+const EXPECTED_CHAIN_ID = CHAIN_NETWORK === "celo" ? 42220 : 11142220;
+const RPC =
+  CHAIN_NETWORK === "celo"
+    ? process.env.CELO_RPC_URL || "https://forno.celo.org"
+    : process.env.CELO_SEPOLIA_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org";
 const GRAPHQL = process.env.GRAPHQL_ENDPOINT;
 
-const deploymentsPath = path.join(__dirname, "../originshear-contracts/deployments.celoSepolia.json");
+const deploymentsFile =
+  CHAIN_NETWORK === "celo" ? "deployments.celo.json" : "deployments.celoSepolia.json";
+const deploymentsPath = path.join(__dirname, "../originshear-contracts", deploymentsFile);
+if (!fs.existsSync(deploymentsPath)) {
+  console.error(`Missing ${deploymentsPath}. Deploy contracts for ${CHAIN_NETWORK} first.`);
+  process.exit(1);
+}
 const deployments = JSON.parse(fs.readFileSync(deploymentsPath, "utf8"));
 
 const results = [];
@@ -163,11 +178,12 @@ async function testSubgraph() {
 async function testOnChainContracts() {
   const provider = new ethers.JsonRpcProvider(RPC);
   const network = await provider.getNetwork();
-  if (Number(network.chainId) !== 11142220) {
-    fail("Celo Sepolia RPC", `unexpected chainId ${network.chainId}`);
+  const label = CHAIN_NETWORK === "celo" ? "Celo mainnet RPC" : "Celo Sepolia RPC";
+  if (Number(network.chainId) !== EXPECTED_CHAIN_ID) {
+    fail(label, `unexpected chainId ${network.chainId}`);
     return;
   }
-  pass("Celo Sepolia RPC", `chainId ${network.chainId}`);
+  pass(label, `chainId ${network.chainId}`);
 
   const ledgerAbi = ["function totalLots() view returns (uint256)"];
   const ledger = new ethers.Contract(deployments.HarvestLedger, ledgerAbi, provider);
@@ -232,6 +248,7 @@ async function testWalletProxyGuidance(token) {
 
 async function main() {
   console.log("\n=== OriginShear Smoke Test ===\n");
+  console.log(`Network: ${CHAIN_NETWORK}`);
   console.log(`API: ${API_BASE}`);
   console.log(`RPC: ${RPC.replace(/\/v2\/[^/]+$/, "/v2/***")}`);
   console.log(`Subgraph: ${GRAPHQL ? "configured" : "missing"}\n`);

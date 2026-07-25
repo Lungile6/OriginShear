@@ -3,6 +3,7 @@ const { body, validationResult } = require("express-validator");
 const { ethers } = require("ethers");
 const { authenticate } = require("../middleware/auth");
 const { requireValidatorRole } = require("../middleware/onchainAuth");
+const { getProvider } = require("../lib/rpc");
 
 const router = express.Router();
 
@@ -15,12 +16,6 @@ const DISPUTE_MIN_ABI = [
 
 const STATUS_LABELS = ["Open", "In Review", "Resolved (Farmer)", "Resolved (Buyer)", "Cancelled"];
 const TYPE_LABELS = ["Quality Mismatch", "Weight Discrepancy", "Fibre Type Error", "Other"];
-
-function getProvider() {
-  const rpcUrl =
-    process.env.CELO_SEPOLIA_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org";
-  return new ethers.JsonRpcProvider(rpcUrl);
-}
 
 function getRelayerSigner() {
   const privateKey = process.env.RELAYER_PRIVATE_KEY;

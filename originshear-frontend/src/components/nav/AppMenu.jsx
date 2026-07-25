@@ -43,6 +43,12 @@ const ROLE_META = {
     soft: "bg-role-buyer/15 text-role-buyer",
     tagline: "Marketplace · verify origin",
   },
+  ADMIN: {
+    label: "Admin portal",
+    accent: "bg-role-validator",
+    soft: "bg-role-validator/15 text-role-validator",
+    tagline: "Grant · revoke · register access",
+  },
 };
 
 const CLOSE_MS = 280;

@@ -1,0 +1,25 @@
+# Keep monorepo Docker builds lean (frontend image context = repo root)
+node_modules
+**/node_modules
+**/dist
+.git
+.github
+.DS_Store
+**/.env
+**/.env.*
+!**/.env.example
+api/data
+api/secrets
+api/__tests__
+api/test-utils
+api/coverage
+originshear-contracts/artifacts
+originshear-contracts/cache
+originshear-contracts/typechain-types
+subgraph/build
+subgraph/generated
+evidence
+ipfs
+scripts
+*.md
+!originshear-frontend/nginx.conf

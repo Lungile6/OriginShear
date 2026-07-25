@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { generateToken, verifyToken } = require('../middleware/auth');
 const { ethers } = require('ethers');
 const onchainRoles = require('../lib/onchainRoles');
+const { recordLogin } = require('../lib/userDirectory');
 
 const router = express.Router();
 const CHALLENGE_TTL_SECONDS = Number(process.env.AUTH_CHALLENGE_TTL_SECONDS || 300);
@@ -115,9 +116,18 @@ router.post('/login', [
       primaryRole: 'BUYER',
     };
 
-    const roleClaims = isOnchainRoleResolutionEnabled() && onchainRoles.getWalletRoleClaims
-      ? await onchainRoles.getWalletRoleClaims(wallet)
-      : fallbackRoleClaims;
+    // Prefer live on-chain roles for directory + JWT when resolution is enabled;
+    // still try a best-effort lookup for the admin login directory.
+    let roleClaims = fallbackRoleClaims;
+    try {
+      if (isOnchainRoleResolutionEnabled() && onchainRoles.getWalletRoleClaims) {
+        roleClaims = await onchainRoles.getWalletRoleClaims(wallet);
+      } else if (onchainRoles.getWalletRoleClaims) {
+        roleClaims = await onchainRoles.getWalletRoleClaims(wallet);
+      }
+    } catch {
+      roleClaims = fallbackRoleClaims;
+    }
 
     const user = {
       wallet,
@@ -128,6 +138,22 @@ router.post('/login', [
       isGovernment: roleClaims.isGovernment,
       isAdmin: roleClaims.isAdmin,
     };
+
+    try {
+      recordLogin({
+        wallet,
+        roles: user.roles,
+        primaryRole: user.role,
+        roleFlags: {
+          isFarmer: user.isFarmer,
+          isValidator: user.isValidator,
+          isGovernment: user.isGovernment,
+          isAdmin: user.isAdmin,
+        },
+      });
+    } catch (dirErr) {
+      console.warn("Failed to record login directory entry:", dirErr.message);
+    }
 
     const token = generateToken(user);
 

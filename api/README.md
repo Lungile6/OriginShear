@@ -71,7 +71,6 @@ See `.env.example`. Common keys:
 | `MULTI_SIG_TREASURY_ADDRESS` | Optional | Treasury |
 | `GRAPHQL_ENDPOINT` | Recommended | The Graph query URL |
 | `IPFS_DEV_FALLBACK` | Dev | Local metadata under `api/data/ipfs-dev/` |
-| `DEV_BYPASS_ROLE_GUARDS` | Dev only | Skip on-chain role checks |
 
 \*Prefer `npm run sync:addresses celoSepolia` from the repo root after deploy.
 
@@ -197,7 +196,6 @@ Guidance:
    - `VALIDATOR_ROLE` on `HARVEST_LEDGER_ADDRESS` / `FARMER_MARKET_ADDRESS`
    - `GOVERNMENT_ROLE` on `INDUSTRY_MARK_REGISTRY_ADDRESS` / `NEWS_BULLETIN_ADDRESS`
    - `ARBITER_ROLE` on `DISPUTE_RESOLUTION_ADDRESS` for the relayer when resolving disputes
-9. Keep `DEV_BYPASS_ROLE_GUARDS` unset/false in production
 
 ## Related docs
 

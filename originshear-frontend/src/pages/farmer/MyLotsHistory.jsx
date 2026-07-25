@@ -47,7 +47,7 @@ export default function MyLotsHistory() {
         <div className="mb-stack-lg">
           <h1 className="text-headline-md font-bold text-on-surface">My Lots (Loto)</h1>
           <p className="text-body-sm text-on-surface-variant">
-            View and manage your registered fibre transactions.
+            View lots, copy Lot ID &amp; proof hash for buyers, or open QR Proof for the bale tag.
           </p>
         </div>
 
@@ -103,7 +103,12 @@ export default function MyLotsHistory() {
 
         <div className="grid grid-cols-1 gap-stack-md">
           {filtered.map((lot) => (
-            <LotCard key={lot.lotId.toString()} lot={lot} onQr={() => navigate(`/farmer/lots/${lot.lotId}/qr`)} />
+            <LotCard
+              key={lot.lotId.toString()}
+              lot={lot}
+              onOpen={() => navigate(`/farmer/lots/${lot.lotId}`)}
+              onQr={() => navigate(`/farmer/lots/${lot.lotId}/qr`)}
+            />
           ))}
         </div>
       </div>
@@ -111,34 +116,38 @@ export default function MyLotsHistory() {
   );
 }
 
-function LotCard({ lot, onQr }) {
+function LotCard({ lot, onOpen, onQr }) {
   const status = lot.status;
 
   return (
     <Card role="farmer" className="hover:border-primary transition-all">
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <span className="text-label-sm text-on-surface-variant uppercase tracking-wider">Lot ID</span>
-          <h3 className="text-headline-sm font-bold">#{lot.lotId.toString()}</h3>
+      <button type="button" onClick={onOpen} className="w-full text-left">
+        <div className="flex justify-between items-start mb-3">
+          <div>
+            <span className="text-label-sm text-on-surface-variant uppercase tracking-wider">
+              Lot ID
+            </span>
+            <h3 className="text-headline-sm font-bold">#{lot.lotId.toString()}</h3>
+          </div>
+          <StatusChip
+            status={LotStatusLabel[status]}
+            label={`${LotStatusLabel[status]}${status === LotStatus.VALIDATED ? " ✓" : status === LotStatus.REJECTED ? " ✗" : ""}`}
+          />
         </div>
-        <StatusChip
-          status={LotStatusLabel[status]}
-          label={`${LotStatusLabel[status]}${status === LotStatus.VALIDATED ? " ✓" : status === LotStatus.REJECTED ? " ✗" : ""}`}
-        />
-      </div>
 
-      <div className="space-y-3 mb-4">
-        <Row label="Fibre / Grade" value={`${FibreTypeLabel[lot.fibreType]} Grade ${GradeLabel[lot.grade]}`} />
-        <Row label="Weight (Boima)" value={`${gramsToKg(lot.weightGrams)}kg`} />
-        <Row label="Origin (Sebaka)" value={lot.gpsZone} />
-        <div className="pt-2 border-t border-outline-variant">
-          <span className="text-[10px] font-mono text-on-surface-variant block truncate">
-            {status === LotStatus.PENDING
-              ? "Syncing with ledger..."
-              : `HASH: ${shorten(lot.proofOfOrigin, 6, 6)}`}
-          </span>
+        <div className="space-y-3 mb-4">
+          <Row label="Fibre / Grade" value={`${FibreTypeLabel[lot.fibreType]} Grade ${GradeLabel[lot.grade]}`} />
+          <Row label="Weight (Boima)" value={`${gramsToKg(lot.weightGrams)}kg`} />
+          <Row label="Origin (Sebaka)" value={lot.gpsZone} />
+          <div className="pt-2 border-t border-outline-variant">
+            <span className="text-[10px] font-mono text-on-surface-variant block truncate">
+              {status === LotStatus.PENDING
+                ? "Syncing with ledger..."
+                : `Proof hash: ${shorten(lot.proofOfOrigin, 8, 6)} · tap card for full copy`}
+            </span>
+          </div>
         </div>
-      </div>
+      </button>
 
       {lot.metadataURI && (
         <a
@@ -152,9 +161,14 @@ function LotCard({ lot, onQr }) {
       )}
 
       {status === LotStatus.VALIDATED && (
-        <Button onClick={onQr} icon={<Icon name="qr_code_2" />}>
-          Generate QR
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button onClick={onQr} icon={<Icon name="qr_code_2" />}>
+            QR Proof (Lot ID + hash)
+          </Button>
+          <Button variant="outline" onClick={onOpen} icon={<Icon name="content_copy" />}>
+            Open lot · copy verify details
+          </Button>
+        </div>
       )}
       {status === LotStatus.PENDING && (
         <div className="w-full h-touch-target-min bg-surface-container-highest text-on-surface-variant opacity-60 rounded-xl font-label-lg flex items-center justify-center gap-2 cursor-not-allowed">
@@ -168,6 +182,11 @@ function LotCard({ lot, onQr }) {
             Appeal Rejection
           </Button>
         </a>
+      )}
+      {status !== LotStatus.VALIDATED && status !== LotStatus.PENDING && status !== LotStatus.REJECTED && (
+        <Button variant="outline" onClick={onOpen}>
+          View lot details
+        </Button>
       )}
     </Card>
   );

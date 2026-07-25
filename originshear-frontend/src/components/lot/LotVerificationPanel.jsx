@@ -1,5 +1,5 @@
 import { useChainId, useReadContract } from "wagmi";
-import { celoSepolia } from "../../lib/wagmiConfig";
+import { DEFAULT_CHAIN_ID } from "../../lib/wagmiConfig";
 import { VERIFIER_ABI } from "../../contracts/ProofOfOriginVerifier";
 import { FibreTypeLabel, GradeLabel } from "../../contracts/HarvestLedger";
 import { getContractAddresses } from "../../contracts/addresses";
@@ -20,7 +20,7 @@ export default function LotVerificationPanel({
   chainId: chainIdProp,
 }) {
   const connectedChainId = useChainId();
-  const chainId = chainIdProp || connectedChainId || celoSepolia.id;
+  const chainId = chainIdProp || connectedChainId || DEFAULT_CHAIN_ID;
   const addresses = getContractAddresses(chainId);
 
   const { data: result, isLoading, isError, error } = useReadContract({
@@ -34,7 +34,8 @@ export default function LotVerificationPanel({
   if (!lotId || !proof) {
     return (
       <p className="text-label-sm text-on-surface-variant">
-        Scan the QR code on a wool/mohair lot, or paste its lot ID and proof hash above.
+        Scan the QR on a bale tag (fills both fields), or ask the farmer for Lot ID and proof hash
+        from <span className="font-semibold">My Lots → View QR Proof</span>.
       </p>
     );
   }

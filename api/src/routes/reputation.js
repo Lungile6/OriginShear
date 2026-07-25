@@ -1,5 +1,6 @@
 const express = require("express");
 const { ethers } = require("ethers");
+const { getProvider } = require("../lib/rpc");
 
 const router = express.Router();
 
@@ -8,12 +9,6 @@ const REPUTATION_MIN_ABI = [
 ];
 
 const RATING_LABELS = ["Poor", "Fair", "Good", "Excellent"];
-
-function getProvider() {
-  const rpcUrl =
-    process.env.CELO_SEPOLIA_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org";
-  return new ethers.JsonRpcProvider(rpcUrl);
-}
 
 function getReputationContract(provider) {
   const address = process.env.REPUTATION_SYSTEM_ADDRESS;

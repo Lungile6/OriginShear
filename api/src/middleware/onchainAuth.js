@@ -1,5 +1,9 @@
 const { ethers } = require("ethers");
-const { walletHasValidatorRole, walletHasGovernmentRole } = require("../lib/onchainRoles");
+const {
+  walletHasValidatorRole,
+  walletHasGovernmentRole,
+  walletHasAdminRole,
+} = require("../lib/onchainRoles");
 
 function resolveCallerWallet(req) {
   const wallet = req.user?.wallet;
@@ -7,13 +11,23 @@ function resolveCallerWallet(req) {
   return wallet;
 }
 
-function isDevBypassEnabled() {
-  return process.env.DEV_BYPASS_ROLE_GUARDS === "true";
+async function requireAdminRole(req, res, next) {
+  try {
+    const wallet = resolveCallerWallet(req);
+    if (!wallet) {
+      return res.status(401).json({ error: "Missing authenticated wallet" });
+    }
+    const hasRole = await walletHasAdminRole(wallet);
+    if (!hasRole) {
+      return res.status(403).json({ error: "Admin role required" });
+    }
+    return next();
+  } catch (error) {
+    return res.status(error.status || 500).json({ error: error.message || "Role check failed" });
+  }
 }
 
 async function requireValidatorRole(req, res, next) {
-  if (isDevBypassEnabled()) return next();
-
   try {
     const wallet = resolveCallerWallet(req);
     if (!wallet) {
@@ -31,8 +45,6 @@ async function requireValidatorRole(req, res, next) {
 }
 
 async function requireGovernmentRole(req, res, next) {
-  if (isDevBypassEnabled()) return next();
-
   try {
     const wallet = resolveCallerWallet(req);
     if (!wallet) {
@@ -50,6 +62,7 @@ async function requireGovernmentRole(req, res, next) {
 }
 
 module.exports = {
+  requireAdminRole,
   requireValidatorRole,
   requireGovernmentRole,
 };

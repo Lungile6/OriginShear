@@ -5,8 +5,17 @@ import { defineChain } from "viem";
 
 const DEFAULT_CELO_SEPOLIA_RPC_URL =
   import.meta.env.VITE_CELO_SEPOLIA_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org";
+const DEFAULT_CELO_RPC_URL =
+  import.meta.env.VITE_CELO_RPC_URL || "https://forno.celo.org";
 
 const WALLETCONNECT_PROJECT_ID = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
+
+/** Active app network: celoSepolia (default) or celo */
+export const CHAIN_NETWORK = (() => {
+  const raw = (import.meta.env.VITE_CHAIN_NETWORK || "celoSepolia").trim();
+  if (raw === "celo" || raw === "mainnet") return "celo";
+  return "celoSepolia";
+})();
 
 export const celoSepolia = defineChain({
   id: 11142220,
@@ -71,10 +80,11 @@ export const wagmiConfig = createConfig({
   connectors,
   transports: {
     [celoSepolia.id]: http(DEFAULT_CELO_SEPOLIA_RPC_URL),
-    [celo.id]: http("https://forno.celo.org"),
+    [celo.id]: http(DEFAULT_CELO_RPC_URL),
     [hardhat.id]: http("http://127.0.0.1:8545"),
   },
 });
 
 export const SUPPORTED_CHAIN_IDS = [celoSepolia.id, celo.id, hardhat.id];
-export const DEFAULT_CHAIN_ID = celoSepolia.id;
+export const DEFAULT_CHAIN_ID = CHAIN_NETWORK === "celo" ? celo.id : celoSepolia.id;
+export const DEFAULT_CHAIN = CHAIN_NETWORK === "celo" ? celo : celoSepolia;
