@@ -1,11 +1,21 @@
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useRole, Role } from "../../context/RoleContext";
-import { DEV_BYPASS_ROLE_GUARDS } from "../../lib/devBypass";
 import TopAppBar from "../../components/nav/TopAppBar";
 import Icon from "../../components/ui/Icon";
 
 const CARDS = [
+  {
+    key: "admin",
+    icon: "admin_panel_settings",
+    border: "border-l-role-validator",
+    iconBg: "bg-role-validator/10 text-role-validator",
+    title: "Administrator",
+    desc: "Register farmers and grant or revoke Farmer, Validator, and Government access on-chain.",
+    role: Role.ADMIN,
+    path: "/admin",
+    pendingPath: "/error/unauthorized",
+  },
   {
     key: "farmer",
     icon: "agriculture",
@@ -58,7 +68,7 @@ export default function RoleSelectionGate() {
   const { roles, isLoadingRoles, hasContracts } = useRole();
 
   function handleSelect(card) {
-    if (DEV_BYPASS_ROLE_GUARDS || card.role === null || card.role === Role.BUYER) {
+    if (card.role === null || card.role === Role.BUYER) {
       navigate(card.path);
       return;
     }

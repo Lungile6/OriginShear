@@ -170,6 +170,9 @@
   [data-role="BUYER"] .role-accent-bar {
     background-color: var(--color-role-buyer);
   }
+  [data-role="ADMIN"] .role-accent-bar {
+    background-color: var(--color-role-validator);
+  }
 
   /* ---- App menu (hamburger drawer) ---- */
   .app-menu-overlay {

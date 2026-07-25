@@ -28,12 +28,18 @@ export const NAV_BY_ROLE = {
     { to: "/buyer/purchases", label: "Purchases", st: "Nalane", icon: "receipt_long" },
     { to: "/buyer/verify", label: "Verify", st: "Netefatsa", icon: "qr_code_scanner" },
   ],
+  ADMIN: [
+    { to: "/admin", label: "Access", st: "Phihlello", icon: "admin_panel_settings" },
+    { to: "/role-select", label: "Roles", st: "Likarolo", icon: "badge" },
+    { to: "/news", label: "News", st: "Litaba", icon: "newspaper" },
+  ],
 };
 
 export const GLOBAL_MENU_LINKS = [
   { label: "Landing Page", to: "/", icon: "home" },
   { label: "Connect Wallet", to: "/connect", icon: "account_balance_wallet" },
   { label: "Choose Role", to: "/role-select", icon: "badge" },
+  { label: "Admin Access", to: "/admin", icon: "admin_panel_settings" },
   { label: "Marketplace", to: "/buyer/marketplace", icon: "storefront" },
   { label: "Verify a Lot", to: "/buyer/verify", icon: "qr_code_scanner" },
   { label: "Ministry News", to: "/news", icon: "newspaper" },

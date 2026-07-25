@@ -7,6 +7,7 @@ import TopAppBar from "../../components/nav/TopAppBar";
 import Button from "../../components/ui/Button";
 import Icon from "../../components/ui/Icon";
 import Card from "../../components/ui/Card";
+import ApplyForAccessButton from "../../components/auth/ApplyForAccessButton";
 
 export default function ValidatorPending() {
   const { address } = useAccount();
@@ -49,14 +50,20 @@ export default function ValidatorPending() {
             </button>
           </div>
 
+          <ApplyForAccessButton
+            requestedRole="VALIDATOR"
+            variant="navy"
+            label="Apply for validator access"
+          />
           <a href={address ? mailtoValidator(address) : undefined} className="block mb-3">
-            <Button variant="navy" icon={<Icon name="mail" />}>
-              Send this address to your administrator
+            <Button variant="outline" icon={<Icon name="mail" />}>
+              Or email the administrator
             </Button>
           </a>
           <p className="text-body-sm text-on-surface-variant text-center mb-4">
-            Admins typically process new validator requests within 24-48 business hours. You will receive
-            an automated notification once approved.
+            Applying puts your wallet in the Admin Access applications list. An administrator grants{" "}
+            <span className="font-semibold">VALIDATOR_ROLE</span> from Look up wallet → Grant
+            validator. Then tap Check again.
           </p>
 
           <div className="flex items-center gap-3 mb-4">

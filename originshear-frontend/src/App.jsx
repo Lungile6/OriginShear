@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Outlet, useLocation, Navigate, useParams } from "react-router-dom";
 import RequireRole from "./components/RequireRole";
+import RequireAdmin from "./components/RequireAdmin";
 import { Role } from "./context/RoleContext";
 import { RegisterLotProvider } from "./pages/farmer/RegisterLotContext";
 import BottomNav from "./components/nav/BottomNav";
@@ -44,6 +45,8 @@ const LotPurchaseDetail = lazy(() => import("./pages/buyer/LotPurchaseDetail"));
 const BuyerPurchaseHistory = lazy(() => import("./pages/buyer/BuyerPurchaseHistory"));
 const BuyerLotVerification = lazy(() => import("./pages/buyer/BuyerLotVerification"));
 
+const AdminAccess = lazy(() => import("./pages/admin/AdminAccess"));
+
 function RegisterLotFlow() {
   return (
     <RegisterLotProvider>
@@ -61,6 +64,7 @@ function GlobalBottomNavigation() {
   else if (pathname.startsWith("/validator")) role = "VALIDATOR";
   else if (pathname.startsWith("/government")) role = "GOVERNMENT";
   else if (pathname.startsWith("/buyer")) role = "BUYER";
+  else if (pathname.startsWith("/admin")) role = "ADMIN";
 
   if (!role) return null;
 
@@ -237,6 +241,16 @@ export default function App() {
         <Route path="/buyer/news" element={<Navigate to="/news" replace />} />
         <Route path="/buyer/verify" element={<BuyerLotVerification />} />
         <Route path="/buyer/verify/lot/:lotId" element={<BuyerLotVerification />} />
+
+        {/* Admin (DEFAULT_ADMIN_ROLE) */}
+        <Route
+          path="/admin"
+          element={
+            <RequireAdmin>
+              <AdminAccess />
+            </RequireAdmin>
+          }
+        />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

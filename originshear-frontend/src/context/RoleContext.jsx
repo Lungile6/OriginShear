@@ -6,11 +6,11 @@ import { useAccount, useChainId, useReadContract, useReadContracts } from "wagmi
 import { HARVEST_LEDGER_ABI } from "../contracts/HarvestLedger";
 import { INDUSTRY_MARK_REGISTRY_ABI } from "../contracts/IndustryMarkRegistry";
 import { getContractAddresses } from "../contracts/addresses";
-import { DEV_BYPASS_ROLE_GUARDS } from "../lib/devBypass";
 
 const RoleContext = createContext(null);
 
 export const Role = {
+  ADMIN: "ADMIN", // HarvestLedger DEFAULT_ADMIN_ROLE
   FARMER: "FARMER",
   VALIDATOR: "VALIDATOR",
   GOVERNMENT: "GOVERNMENT", // IndustryMarkRegistry GOVERNMENT_ROLE
@@ -75,23 +75,6 @@ export function RoleProvider({ children }) {
   });
 
   const value = useMemo(() => {
-    if (DEV_BYPASS_ROLE_GUARDS) {
-      return {
-        isConnected,
-        address,
-        chainId,
-        hasContracts: true,
-        isLoadingRoles: false,
-        roles: [Role.FARMER, Role.VALIDATOR, Role.GOVERNMENT, Role.BUYER],
-        primaryRole: Role.GOVERNMENT,
-        isFarmer: true,
-        isValidator: true,
-        isAdmin: true,
-        isGovPublisher: true,
-        farmerProfile: null,
-      };
-    }
-
     const [isFarmer, isValidator, isAdmin, isGovPublisher] = roleChecks?.map((r) => r.result) ?? [
       false,
       false,
@@ -100,13 +83,15 @@ export function RoleProvider({ children }) {
     ];
 
     const roles = [];
+    if (isAdmin) roles.push(Role.ADMIN);
     if (isFarmer) roles.push(Role.FARMER);
     if (isValidator) roles.push(Role.VALIDATOR);
     if (isGovPublisher) roles.push(Role.GOVERNMENT);
     if (isConnected) roles.push(Role.BUYER);
 
     let primaryRole = Role.NONE;
-    if (isGovPublisher) primaryRole = Role.GOVERNMENT;
+    if (isAdmin) primaryRole = Role.ADMIN;
+    else if (isGovPublisher) primaryRole = Role.GOVERNMENT;
     else if (isValidator) primaryRole = Role.VALIDATOR;
     else if (isFarmer) primaryRole = Role.FARMER;
 
