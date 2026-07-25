@@ -51,8 +51,13 @@ async function request(path, { method = "GET", body, auth = false } = {}) {
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
   } catch {
+    if (import.meta.env.DEV) {
+      throw new Error(
+        `Cannot reach API at ${API_BASE_URL}. Make sure the API is running (cd api && npm run dev) and open the app from http://localhost:5173 (or 5174).`
+      );
+    }
     throw new Error(
-      `Cannot reach API at ${API_BASE_URL}. Make sure the API is running (cd api && npm run dev) and open the app from http://localhost:5173 (or 5174).`
+      "We couldn't reach the server. Please check your connection and try again in a moment."
     );
   }
 

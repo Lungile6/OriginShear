@@ -157,12 +157,12 @@ export default function WalletConnect() {
               icon={<Icon name="qr_code_2" />}
               iconPosition="right"
             >
-              WalletConnect (Valora / mobile)
+              Scan with mobile wallet
             </Button>
           )}
           {!walletConnectConnector && (
             <p className="text-label-sm text-on-surface-variant text-center">
-              Set VITE_WALLETCONNECT_PROJECT_ID to enable WalletConnect for mobile Valora.
+              On a phone? Open this site in the Valora or MetaMask browser to connect.
             </p>
           )}
         </div>
