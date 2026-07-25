@@ -34,12 +34,11 @@ OriginShear/
 
 ## Demo Video & Live Links
 
-> **Add your submission links here before final hand-in.**
-
 | Item | Link |
 |------|------|
-| **Demo video (~5 min)** | `https://youtu.be/Tp-5i1Z0zkw` |
-| **Deployed application** | `[NO LIVE APP URL YET]` |
+| **Demo video (~5 min)** | https://youtu.be/Tp-5i1Z0zkw |
+| **Deployed application** | https://originshear.vercel.app |
+| **API (health)** | https://originshear.onrender.com/health |
 
 **Suggested video content (for reviewers):**
 1. Connect MetaMask on Celo Sepolia
@@ -47,9 +46,6 @@ OriginShear/
 3. Validator approves the lot from the queue
 4. Buyer browses the public marketplace and verifies proof of origin
 5. Optional: government news publish or validator escrow release
-
-Example placeholder formats:
-- YouTube: `https://youtu.be/Tp-5i1Z0zkw`
 
 ---
 
@@ -477,6 +473,35 @@ Cross-link checklist after both are live:
 2. Vercel `VITE_API_BASE_URL` → Render API origin (no trailing slash).
 3. Redeploy the frontend if you change any `VITE_*` value (they are compile-time).
 
+### Live production (current)
+
+| Service | URL | Host |
+|---------|-----|------|
+| Web app | https://originshear.vercel.app | Vercel (`originshear-frontend`) |
+| API | https://originshear.onrender.com | Render (Docker, `api/Dockerfile`) |
+
+**Required cross-links**
+
+- Render `FRONTEND_URL` = `https://originshear.vercel.app` (exact origin, no trailing slash)
+- Vercel `VITE_API_BASE_URL` = `https://originshear.onrender.com`
+- Render `API_PUBLIC_URL` = `https://originshear.onrender.com`
+
+**Notes for reviewers**
+
+- Free Render instances sleep when idle; the first request after idle can take 30–60 seconds.
+- Express uses `trust proxy` so rate limiting works behind Render’s reverse proxy.
+- Optional: set `VITE_WALLETCONNECT_PROJECT_ID` on Vercel for QR / mobile WalletConnect; without it, open the app in the MetaMask or Valora in-app browser.
+- Production UI does not show developer env-setup messages.
+
+**Quick verify**
+
+```bash
+curl -sS https://originshear.onrender.com/health
+curl -sS -H "Origin: https://originshear.vercel.app" https://originshear.onrender.com/health
+```
+
+Both should return `{"status":"ok",...}`.
+
 ---
 
 ## Troubleshooting
@@ -484,7 +509,7 @@ Cross-link checklist after both are live:
 | Problem | Fix |
 |---------|-----|
 | **`Missing script: "seed:roles"`** | You are not in `OriginShear/` — `cd` into the folder that contains root `package.json` |
-| **Frontend can't reach API** | API on port 3000; `VITE_API_BASE_URL=http://localhost:3000` |
+| **Frontend can't reach API** | Local: API on port 3000 and `VITE_API_BASE_URL=http://localhost:3000`. Hosted: confirm Render `/health`, Vercel `VITE_API_BASE_URL`, and Render `FRONTEND_URL` match exactly (CORS). |
 | **Wrong network** | MetaMask → Celo Sepolia (chain ID `11142220`) |
 | **Unauthorized / pending role** | Ask an admin to grant access in **Administrator → Access control**, or use the wallet that was granted that role |
 | **`balanceOf` / cUSD errors** | Use Sepolia Mento cUSD `0xdE9e4C3c…`, not Alfajores `0x8740…`; redeploy if contracts were built with the wrong token |
