@@ -124,12 +124,35 @@ async function uploadViaHttp(metadata, { apiBase, headers = {} }) {
   return { cid, devFallback: false };
 }
 
-async function uploadViaPinata(metadata) {
-  const pinataJwt = process.env.PINATA_JWT;
-  if (!pinataJwt) {
-    throw new Error("PINATA_JWT is not configured");
+async function uploadViaPinataV3(metadata, pinataJwt) {
+  const formData = new FormData();
+  const blob = new Blob([JSON.stringify(metadata)], { type: "application/json" });
+  formData.append("file", blob, "originshear-lot-metadata.json");
+  formData.append("network", "public");
+  formData.append("name", "originshear-lot-metadata.json");
+
+  const response = await fetch("https://uploads.pinata.cloud/v3/files", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${pinataJwt}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const details = await response.text().catch(() => "");
+    throw new Error(`Pinata v3 upload failed (${response.status}): ${details}`);
   }
 
+  const payload = await response.json();
+  const cid = payload?.data?.cid || payload?.cid || null;
+  if (!cid) {
+    throw new Error("Pinata v3 upload succeeded but no CID was returned");
+  }
+  return { cid, devFallback: false };
+}
+
+async function uploadViaPinataLegacy(metadata, pinataJwt) {
   const response = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
     method: "POST",
     headers: {
@@ -144,14 +167,32 @@ async function uploadViaPinata(metadata) {
 
   if (!response.ok) {
     const details = await response.text().catch(() => "");
-    throw new Error(`Pinata pin failed (${response.status}): ${details}`);
+    throw new Error(`Pinata legacy pin failed (${response.status}): ${details}`);
   }
 
   const payload = await response.json();
   if (!payload.IpfsHash) {
-    throw new Error("Pinata pin succeeded but no CID was returned");
+    throw new Error("Pinata legacy pin succeeded but no CID was returned");
   }
   return { cid: payload.IpfsHash, devFallback: false };
+}
+
+async function uploadViaPinata(metadata) {
+  const pinataJwt = process.env.PINATA_JWT;
+  if (!pinataJwt) {
+    throw new Error("PINATA_JWT is not configured");
+  }
+
+  // Prefer V3 uploads (matches dashboard "Files → Write" scoped keys).
+  try {
+    return await uploadViaPinataV3(metadata, pinataJwt);
+  } catch (v3Err) {
+    try {
+      return await uploadViaPinataLegacy(metadata, pinataJwt);
+    } catch (legacyErr) {
+      throw new Error(`${v3Err.message}; legacy fallback: ${legacyErr.message}`);
+    }
+  }
 }
 
 async function uploadMetadata(metadata) {
