@@ -107,7 +107,9 @@ async function getWalletRoleClaims(wallet) {
   roles.push("BUYER");
 
   claims.roles = roles;
-  claims.primaryRole = claims.isGovernment
+  claims.primaryRole = claims.isAdmin
+    ? "ADMIN"
+    : claims.isGovernment
     ? "GOVERNMENT"
     : claims.isValidator
     ? "VALIDATOR"
@@ -118,8 +120,14 @@ async function getWalletRoleClaims(wallet) {
   return claims;
 }
 
+async function walletHasAdminRole(wallet) {
+  const claims = await getWalletRoleClaims(wallet);
+  return Boolean(claims.isAdmin);
+}
+
 module.exports = {
   walletHasValidatorRole,
   walletHasGovernmentRole,
+  walletHasAdminRole,
   getWalletRoleClaims,
 };
