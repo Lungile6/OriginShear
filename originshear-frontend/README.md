@@ -73,7 +73,6 @@ cp .env.example .env
 | `VITE_API_BASE_URL` | API origin (default `http://localhost:3000`) |
 | `VITE_CELO_SEPOLIA_RPC_URL` | RPC for wagmi |
 | `VITE_CELO_SEPOLIA_HARVEST_LEDGER` etc. | Contract addresses (use sync) |
-| `VITE_DEV_BYPASS_ROLE_GUARDS` | `true` unlocks all role routes locally |
 | `VITE_WALLETCONNECT_PROJECT_ID` | Optional WalletConnect for mobile Valora |
 | `VITE_IPFS_GATEWAY` | Gateway for `ipfs://` links |
 
@@ -94,7 +93,7 @@ Start the API as well (`cd api && npm run dev`) before testing register-lot IPFS
    `0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b`.
 
 Roles are resolved on-chain (`RoleContext`). Wrong account → onboarding / pending screens.  
-Grant roles from the repo root with `npm run seed:roles` (see root `README.md`).
+**Administrator** (deployer `DEFAULT_ADMIN_ROLE`) uses `/admin` to register farmers and grant/revoke roles. Optional CLI: `npm run seed:roles` (see root `README.md`).
 
 Public verification (no wallet): `/verify` and `/verify/lot/:lotId`.
 

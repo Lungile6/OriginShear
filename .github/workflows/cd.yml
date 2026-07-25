@@ -57,7 +57,6 @@ jobs:
           VITE_CELO_SEPOLIA_RPC_URL: ${{ vars.VITE_CELO_SEPOLIA_RPC_URL || 'https://forno.celo-sepolia.celo-testnet.org' }}
           VITE_CELO_RPC_URL: ${{ vars.VITE_CELO_RPC_URL || 'https://forno.celo.org' }}
           VITE_IPFS_GATEWAY: ${{ vars.VITE_IPFS_GATEWAY || 'https://ipfs.io/ipfs' }}
-          VITE_DEV_BYPASS_ROLE_GUARDS: "false"
           VITE_WALLETCONNECT_PROJECT_ID: ${{ secrets.VITE_WALLETCONNECT_PROJECT_ID }}
           VITE_CELO_SEPOLIA_HARVEST_LEDGER: ${{ vars.VITE_CELO_SEPOLIA_HARVEST_LEDGER }}
           VITE_CELO_SEPOLIA_FARMER_MARKET: ${{ vars.VITE_CELO_SEPOLIA_FARMER_MARKET }}

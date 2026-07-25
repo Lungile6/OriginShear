@@ -1,7 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useRole } from "../context/RoleContext";
-import { DEV_BYPASS_ROLE_GUARDS } from "../lib/devBypass";
 
 /**
  * Guards a route behind wallet connection + an on-chain role check.
@@ -14,10 +13,6 @@ export default function RequireRole({ role, redirectTo, children }) {
   const location = useLocation();
   const { isConnected } = useAccount();
   const { roles, isLoadingRoles, hasContracts } = useRole();
-
-  if (DEV_BYPASS_ROLE_GUARDS) {
-    return children;
-  }
 
   if (!isConnected) {
     return <Navigate to="/connect" state={{ from: location, intendedRole: role }} replace />;
