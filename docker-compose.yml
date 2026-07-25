@@ -1,0 +1,73 @@
+# Local full-stack containers (API + frontend)
+# Usage (from OriginShear/):
+#   docker compose up --build
+#
+# Production split:
+#   - API  → Render  (api/Dockerfile via render.yaml)
+#   - Web  → Vercel  (originshear-frontend/vercel.json; not Docker)
+
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: originshear-api
+    ports:
+      - "${API_PORT:-3000}:3000"
+    env_file:
+      - ./api/.env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      # Override local Vite origin with the containerized frontend URL
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      API_PUBLIC_URL: ${API_PUBLIC_URL:-http://localhost:3000}
+    volumes:
+      # Persist optional IPFS_DEV_FALLBACK store across restarts
+      - api-ipfs-data:/app/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://127.0.0.1:3000/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: originshear-frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000}
+        VITE_CHAIN_NETWORK: ${VITE_CHAIN_NETWORK:-celoSepolia}
+        VITE_CELO_SEPOLIA_RPC_URL: ${VITE_CELO_SEPOLIA_RPC_URL:-https://forno.celo-sepolia.celo-testnet.org}
+        VITE_CELO_RPC_URL: ${VITE_CELO_RPC_URL:-https://forno.celo.org}
+        VITE_IPFS_GATEWAY: ${VITE_IPFS_GATEWAY:-https://ipfs.io/ipfs}
+        VITE_WALLETCONNECT_PROJECT_ID: ${VITE_WALLETCONNECT_PROJECT_ID:-}
+        VITE_CELO_SEPOLIA_HARVEST_LEDGER: ${VITE_CELO_SEPOLIA_HARVEST_LEDGER:-}
+        VITE_CELO_SEPOLIA_FARMER_MARKET: ${VITE_CELO_SEPOLIA_FARMER_MARKET:-}
+        VITE_CELO_SEPOLIA_VERIFIER: ${VITE_CELO_SEPOLIA_VERIFIER:-}
+        VITE_CELO_SEPOLIA_INDUSTRY_MARK_REGISTRY: ${VITE_CELO_SEPOLIA_INDUSTRY_MARK_REGISTRY:-}
+        VITE_CELO_SEPOLIA_NEWS_BULLETIN: ${VITE_CELO_SEPOLIA_NEWS_BULLETIN:-}
+        VITE_CELO_SEPOLIA_GAS_SUBSIDY_POOL: ${VITE_CELO_SEPOLIA_GAS_SUBSIDY_POOL:-}
+        VITE_CELO_SEPOLIA_DISPUTE_RESOLUTION: ${VITE_CELO_SEPOLIA_DISPUTE_RESOLUTION:-}
+        VITE_CELO_SEPOLIA_REPUTATION_SYSTEM: ${VITE_CELO_SEPOLIA_REPUTATION_SYSTEM:-}
+        VITE_CELO_SEPOLIA_PRICE_ORACLE: ${VITE_CELO_SEPOLIA_PRICE_ORACLE:-}
+        VITE_CELO_SEPOLIA_MULTI_SIG_TREASURY: ${VITE_CELO_SEPOLIA_MULTI_SIG_TREASURY:-}
+    container_name: originshear-web
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  api-ipfs-data:
