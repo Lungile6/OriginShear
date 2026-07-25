@@ -9,8 +9,9 @@ import {
 } from "wagmi";
 import AppLayout from "../../layouts/AppLayout";
 import LotVerificationPanel from "../../components/lot/LotVerificationPanel";
+import LotVerifyCredentials from "../../components/lot/LotVerifyCredentials";
 import { useCusdBalance } from "../../hooks/useCusdBalance";
-import { HARVEST_LEDGER_ABI, FibreTypeLabel, GradeLabel } from "../../contracts/HarvestLedger";
+import { HARVEST_LEDGER_ABI, FibreTypeLabel, GradeLabel, LotStatus } from "../../contracts/HarvestLedger";
 import { FARMER_MARKET_ABI, OfferStatus, OfferStatusLabel, ERC20_ABI } from "../../contracts/FarmerMarket";
 import { getContractAddresses } from "../../contracts/addresses";
 import { formatCUSD, cusdToLSL, gramsToKg, shorten } from "../../lib/utils";
@@ -196,7 +197,14 @@ export default function LotPurchaseDetail() {
         </Link>
 
         <Card role="buyer" className="mb-stack-md">
-          <p className="text-label-sm text-on-surface-variant uppercase">Lot #{lotId}</p>
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <p className="text-label-sm text-on-surface-variant uppercase">Lot #{lotId}</p>
+            {Number(lot.status) === LotStatus.VALIDATED && (
+              <span className="bg-role-farmer/15 text-role-farmer rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase">
+                Verified
+              </span>
+            )}
+          </div>
           <p className="font-bold text-headline-sm mb-2">
             {FibreTypeLabel[lot.fibreType]} · Grade {GradeLabel[lot.grade]} · {gramsToKg(lot.weightGrams)} kg
           </p>
@@ -216,16 +224,20 @@ export default function LotPurchaseDetail() {
           )}
         </Card>
 
+        {Number(lot.status) === LotStatus.VALIDATED && proof && (
+          <LotVerifyCredentials
+            lotId={lotId}
+            proofHash={proof}
+            verifyPath="/buyer/verify"
+            className="mb-stack-md"
+          />
+        )}
+
         <section className="mb-stack-lg">
           <div className="flex items-center justify-between mb-3 gap-3">
             <h2 className="text-label-lg text-on-surface-variant uppercase tracking-widest">
-              <BilingualText en="Origin Verification" st="Netefatso ea Tšimo" size="label-lg" />
+              <BilingualText en="On-chain check" st="Netefatso ea Tšimo" size="label-lg" />
             </h2>
-            {proof && (
-              <Link to={`/buyer/verify/lot/${lotId}?proof=${proof}`} className="text-primary text-label-sm font-bold">
-                Open Full Verify
-              </Link>
-            )}
           </div>
           <LotVerificationPanel lotId={lotId} proof={proof} showDownloadButton={false} />
         </section>
@@ -333,7 +345,14 @@ export default function LotPurchaseDetail() {
           </Card>
         )}
 
-        {!offerData && (
+        {!offerData && Number(lot?.status) === LotStatus.VALIDATED && (
+          <p className="text-body-sm text-on-surface-variant mt-stack-md">
+            Verified but not listed for sale yet — the farmer still needs to set a price on Sell Your
+            Lot. You can still verify origin with the Lot ID, proof hash, or QR above.
+          </p>
+        )}
+
+        {!offerData && lot && Number(lot.status) !== LotStatus.VALIDATED && (
           <p className="text-body-sm text-on-surface-variant">
             This lot is not currently listed on the marketplace.
           </p>
