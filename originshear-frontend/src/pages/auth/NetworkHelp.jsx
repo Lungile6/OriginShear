@@ -4,7 +4,7 @@ import TopAppBar from "../../components/nav/TopAppBar";
 const STEPS = [
   "Open your wallet app (Valora or MetaMask).",
   "Go to Settings → Networks → Add Network.",
-  "Enter Celo Sepolia: RPC https://celo-sepolia.g.alchemy.com/v2/guusXcuDWSTypMk8NFB4_, Chain ID 11142220, Currency CELO.",
+  "Enter Celo Sepolia: RPC https://forno.celo-sepolia.celo-testnet.org, Chain ID 11142220, Currency CELO.",
   "Save, then switch to the Celo Sepolia network.",
   "Return to ORIGINSHEAR and refresh this page.",
 ];

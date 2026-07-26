@@ -10,6 +10,11 @@ const DEFAULT_CELO_RPC_URL =
 
 const WALLETCONNECT_PROJECT_ID = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
 
+/** Canonical app origin for WalletConnect metadata (must match the URL users open). */
+const APP_ORIGIN =
+  import.meta.env.VITE_APP_ORIGIN ||
+  (typeof window !== "undefined" ? window.location.origin : "https://originshear.vercel.app");
+
 /** Active app network: celoSepolia (default) or celo */
 export const CHAIN_NETWORK = (() => {
   const raw = (import.meta.env.VITE_CHAIN_NETWORK || "celoSepolia").trim();
@@ -68,8 +73,8 @@ if (WALLETCONNECT_PROJECT_ID) {
       metadata: {
         name: "ORIGINSHEAR",
         description: "Lesotho wool & mohair proof of origin marketplace",
-        url: typeof window !== "undefined" ? window.location.origin : "https://originshear.ls",
-        icons: ["https://originshear.ls/icon.png"],
+        url: APP_ORIGIN,
+        icons: [`${APP_ORIGIN}/favicon.svg`],
       },
     })
   );

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useSignMessage } from "wagmi";
 import { ensureApiSession } from "../../lib/apiAuth";
 import { apiClient } from "../../lib/apiClient";
 import Button from "../ui/Button";
@@ -15,6 +15,7 @@ export default function ApplyForAccessButton({
   label = "Apply for access in Admin panel",
 }) {
   const { address } = useAccount();
+  const { signMessageAsync } = useSignMessage();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -28,7 +29,7 @@ export default function ApplyForAccessButton({
     setError("");
     setMessage("");
     try {
-      await ensureApiSession(address);
+      await ensureApiSession(address, signMessageAsync);
       await apiClient.post(
         "/api/access-requests",
         { requestedRole, note: `Applied from ${requestedRole} pending screen` },

@@ -1,7 +1,7 @@
 const { JsonRpcProvider, getCreateAddress } = require("ethers");
 
 async function main() {
-  const provider = new JsonRpcProvider("https://celo-sepolia.g.alchemy.com/v2/guusXcuDWSTypMk8NFB4_");
+  const provider = new JsonRpcProvider("https://forno.celo-sepolia.celo-testnet.org");
   const deployer = "0x4b8eEDd24270579A8D61a7F4Eaa0cf05b3Aa7672";
 
   console.log("Checking nonces for deployer:", deployer);

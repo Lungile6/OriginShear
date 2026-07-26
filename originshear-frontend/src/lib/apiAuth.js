@@ -48,6 +48,16 @@ async function isApiTokenAccepted(token) {
 }
 
 /**
+ * True when a stored JWT exists for this wallet and the API still accepts it.
+ * Does not prompt the wallet to sign.
+ */
+export async function hasValidApiSession(wallet) {
+  const existing = getApiTokenForWallet(wallet);
+  if (!existing) return false;
+  return isApiTokenAccepted(existing);
+}
+
+/**
  * Signs a challenge and stores a JWT for protected API routes.
  */
 export async function authenticateApiSession(wallet, signMessageAsync) {

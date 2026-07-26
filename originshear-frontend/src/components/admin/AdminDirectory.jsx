@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { useAccount } from "wagmi";
-import { ensureApiSession } from "../../lib/apiAuth";
+import { useAccount, useSignMessage } from "wagmi";
+import { ensureApiSession, hasValidApiSession } from "../../lib/apiAuth";
 import { apiClient } from "../../lib/apiClient";
 import { shorten } from "../../lib/utils";
 import Card from "../ui/Card";
@@ -33,42 +33,53 @@ function RoleTags({ user }) {
  */
 export default function AdminDirectory({ onSelectWallet }) {
   const { address } = useAccount();
+  const { signMessageAsync } = useSignMessage();
   const [logins, setLogins] = useState([]);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const load = useCallback(async () => {
-    if (!address) return;
-    setLoading(true);
-    setError("");
-    try {
-      await ensureApiSession(address);
-      const [loginRes, reqRes] = await Promise.all([
-        apiClient.get("/api/admin/logins", { auth: true }),
-        apiClient.get("/api/access-requests?status=pending", { auth: true }),
-      ]);
-      setLogins(loginRes.data || []);
-      setRequests(reqRes.data || []);
-    } catch (err) {
-      setError(err?.message || "Failed to load directory");
-    } finally {
-      setLoading(false);
-    }
-  }, [address]);
+  const load = useCallback(
+    async ({ allowSign = false } = {}) => {
+      if (!address) return;
+      setLoading(true);
+      setError("");
+      try {
+        const alreadySignedIn = await hasValidApiSession(address);
+        if (!alreadySignedIn && !allowSign) {
+          setError("Sign in to OriginShear first, then tap Refresh.");
+          setLogins([]);
+          setRequests([]);
+          return;
+        }
+        await ensureApiSession(address, signMessageAsync);
+        const [loginRes, reqRes] = await Promise.all([
+          apiClient.get("/api/admin/logins", { auth: true }),
+          apiClient.get("/api/access-requests?status=pending", { auth: true }),
+        ]);
+        setLogins(loginRes.data || []);
+        setRequests(reqRes.data || []);
+      } catch (err) {
+        setError(err?.message || "Failed to load directory");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [address, signMessageAsync]
+  );
 
   useEffect(() => {
     const t = setTimeout(() => {
-      void load();
+      void load({ allowSign: false });
     }, 0);
     return () => clearTimeout(t);
   }, [load]);
 
   async function markRequest(id, status) {
     try {
-      await ensureApiSession(address);
+      await ensureApiSession(address, signMessageAsync);
       await apiClient.patch(`/api/access-requests/${id}`, { status }, { auth: true });
-      await load();
+      await load({ allowSign: true });
     } catch (err) {
       setError(err?.message || "Failed to update request");
     }
@@ -90,7 +101,7 @@ export default function AdminDirectory({ onSelectWallet }) {
             size="sm"
             fullWidth={false}
             loading={loading}
-            onClick={load}
+            onClick={() => load({ allowSign: true })}
             icon={<Icon name="refresh" />}
           >
             Refresh
