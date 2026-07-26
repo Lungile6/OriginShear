@@ -9,6 +9,8 @@ import BottomNav from "./components/nav/BottomNav";
 const LandingPage = lazy(() => import("./pages/public/LandingPage"));
 const NotFound = lazy(() => import("./pages/public/NotFound"));
 const PublicLotVerification = lazy(() => import("./pages/public/PublicLotVerification"));
+const PrivacyPolicy = lazy(() => import("./pages/public/PrivacyPolicy"));
+const TermsOfUse = lazy(() => import("./pages/public/TermsOfUse"));
 
 const Splash = lazy(() => import("./pages/auth/Splash"));
 const WalletConnect = lazy(() => import("./pages/auth/WalletConnect"));
@@ -99,6 +101,10 @@ export default function App() {
         <Route path="/verify/lot/:lotId" element={<PublicLotVerification />} />
         <Route path="/public/verify" element={<Navigate to="/verify" replace />} />
         <Route path="/public/verify/lot/:lotId" element={<LegacyVerifyLotRedirect />} />
+        <Route path="/legal/privacy" element={<PrivacyPolicy />} />
+        <Route path="/legal/terms" element={<TermsOfUse />} />
+        <Route path="/privacy" element={<Navigate to="/legal/privacy" replace />} />
+        <Route path="/terms" element={<Navigate to="/legal/terms" replace />} />
 
         {/* Auth */}
         <Route path="/splash" element={<Splash />} />

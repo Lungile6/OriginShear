@@ -85,7 +85,23 @@ export default function LandingPage() {
       </section>
 
       <footer className="px-margin-mobile py-8 text-center text-label-sm text-on-surface-variant border-t border-outline-variant">
-        © 2026 ORIGINSHEAR. Built for Lesotho's wool and mohair industry.
+        <p>© 2026 ORIGINSHEAR. Built for Lesotho&apos;s wool and mohair industry.</p>
+        <p className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+          <button
+            type="button"
+            className="font-semibold text-primary underline"
+            onClick={() => navigate("/legal/privacy")}
+          >
+            Privacy Policy
+          </button>
+          <button
+            type="button"
+            className="font-semibold text-primary underline"
+            onClick={() => navigate("/legal/terms")}
+          >
+            Terms of Use / EULA
+          </button>
+        </p>
       </footer>
     </div>
   );

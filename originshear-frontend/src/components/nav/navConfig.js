@@ -44,4 +44,6 @@ export const GLOBAL_MENU_LINKS = [
   { label: "Verify a Lot", to: "/buyer/verify", icon: "qr_code_scanner" },
   { label: "Ministry News", to: "/news", icon: "newspaper" },
   { label: "Network Help", to: "/help/network", icon: "help" },
+  { label: "Privacy Policy", to: "/legal/privacy", icon: "policy" },
+  { label: "Terms / EULA", to: "/legal/terms", icon: "gavel" },
 ];
