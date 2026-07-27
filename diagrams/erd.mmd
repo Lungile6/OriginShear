@@ -1,0 +1,167 @@
+erDiagram
+  FARMER ||--o{ LOT : registers
+  FARMER ||--o{ OFFER : lists
+  FARMER ||--o{ MARK : receives
+  LOT ||--o| OFFER : "0..1 listing"
+  LOT ||--o{ VALIDATION : validated_by
+  OFFER ||--o| PURCHASE : "buyer escrow"
+  OFFER ||--o| PAYMENT : "release to farmer"
+  FARMER ||--o{ ACCESS_REQUEST : may_submit
+  USER_LOGIN ||--o{ ACCESS_REQUEST : tracked_as
+
+  FARMER {
+    bytes id PK "wallet"
+    bytes wallet
+    string farmerId
+    string district
+    boolean active
+    bigint totalLotsRegistered
+    bigint totalWeightGrams
+    bigint createdAt
+  }
+
+  LOT {
+    string id PK
+    bigint lotId
+    bytes farmer FK
+    int fibreType "WOOL|MOHAIR"
+    int grade "A|B|C"
+    bigint weightGrams
+    string gpsZone
+    string seasonYear
+    bytes proofOfOrigin
+    int status "PENDING|VALIDATED|REJECTED|SOLD"
+    bigint registeredAt
+    bigint validatedAt
+    bytes validatedBy
+    string metadataURI
+  }
+
+  VALIDATION {
+    string id PK
+    string lot FK
+    bytes validator
+    int status
+    bigint timestamp
+  }
+
+  OFFER {
+    string id PK
+    bigint offerId
+    string lot FK
+    bytes farmer FK
+    bigint askPriceWei
+    bytes buyer
+    bigint escrowAmount
+    int status "LISTED|IN_ESCROW|COMPLETED|CANCELLED"
+    bigint listedAt
+    bigint completedAt
+  }
+
+  PURCHASE {
+    string id PK
+    string offer FK
+    bytes buyer
+    bigint amount
+    bigint timestamp
+  }
+
+  PAYMENT {
+    string id PK
+    string offer FK
+    bytes farmer
+    bigint netAmount
+    bigint fee
+    bigint timestamp
+  }
+
+  MARK {
+    string id PK
+    bigint markId
+    bytes farmer FK
+    string farmerId
+    int markType "EAR_TAG|BRANDING|TATTOO"
+    string description
+    bigint issuedAt
+    bigint expiresAt
+    int status "ACTIVE|EXPIRED|REVOKED"
+    bytes issuedBy
+    string metadataURI
+  }
+
+  USER_LOGIN {
+    string wallet PK
+    string primaryRole
+    string_array roles
+    boolean isFarmer
+    boolean isValidator
+    boolean isGovernment
+    boolean isAdmin
+    datetime firstLoginAt
+    datetime lastLoginAt
+    int loginCount
+  }
+
+  ACCESS_REQUEST {
+    string id PK
+    string wallet
+    string requestedRole "FARMER|VALIDATOR|GOVERNMENT"
+    string note
+    string status "pending|reviewed|approved|rejected"
+    datetime createdAt
+    datetime updatedAt
+    string reviewedBy
+  }
+
+  BULLETIN {
+    bigint bulletinId PK
+    int bulletinType
+    string title
+    string body
+    bytes publishedBy
+    bigint publishedAt
+    int status
+    string metadataURI
+  }
+
+  DISPUTE {
+    bigint disputeId PK
+    bigint offerId FK
+    bytes farmer
+    bytes buyer
+    int disputeType
+    string description
+    int status
+    bytes openedBy
+    bigint openedAt
+    bytes resolvedBy
+    string resolutionNote
+    bigint refundAmount
+  }
+
+  REPUTATION {
+    string entityId PK
+    int entityType "FARMER|BUYER"
+    bytes wallet
+    bigint totalTransactions
+    bigint successfulTransactions
+    bigint totalScore
+    int currentRating
+  }
+
+  REVIEW {
+    bigint reviewId PK
+    bytes reviewer
+    bytes reviewed
+    int score "1-5"
+    string comment
+    bigint timestamp
+  }
+
+  SUBSIDY_CLAIM {
+    bigint claimId PK
+    bytes farmer
+    bigint amount
+    bigint claimedAt
+    string reason
+  }
