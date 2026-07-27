@@ -1,0 +1,62 @@
+flowchart TB
+  subgraph Client["Client Layer"]
+    Browser["React SPA<br/>Vite + Tailwind + TanStack Query"]
+    Wallet["Wallet<br/>MetaMask / Valora / WalletConnect"]
+  end
+
+  subgraph Frontend["Frontend Hosting"]
+    Vercel["Vercel<br/>originshear.vercel.app"]
+  end
+
+  subgraph API["Backend API — Render"]
+    Express["Express API<br/>JWT + Helmet + Rate Limit"]
+    Relayer["Relayer Signer<br/>RELAYER_PRIVATE_KEY"]
+    JsonStore["JSON Store<br/>logins + access-requests"]
+    IpfsLib["IPFS Client<br/>Pinata / Infura / local fallback"]
+  end
+
+  subgraph Chain["Celo Blockchain"]
+    Ledger["HarvestLedger"]
+    Market["FarmerMarket"]
+    Verifier["ProofOfOriginVerifier"]
+    Marks["IndustryMarkRegistry"]
+    News["NewsBulletin"]
+    Subsidy["GasSubsidyPool"]
+    Dispute["DisputeResolution"]
+    Reputation["ReputationSystem"]
+    Oracle["PriceOracle"]
+    CUSD["cUSD Token"]
+  end
+
+  subgraph Index["Indexer"]
+    Graph["The Graph Subgraph"]
+  end
+
+  subgraph Storage["Off-chain Storage"]
+    IPFS["IPFS / Pinata"]
+  end
+
+  Browser --> Vercel
+  Browser <--> Wallet
+  Browser -->|"SIWE challenge + JWT"| Express
+  Browser -->|"direct txs via wagmi/viem"| Chain
+  Wallet -->|"sign + send tx"| Chain
+
+  Express --> Relayer
+  Express --> JsonStore
+  Express --> IpfsLib
+  Express -->|"RPC reads"| Chain
+  Express -->|"GraphQL reads"| Graph
+  Relayer -->|"role-gated writes"| Chain
+  IpfsLib --> IPFS
+
+  Graph -->|"indexes events"| Ledger
+  Graph -->|"indexes events"| Market
+  Graph -->|"indexes events"| Marks
+
+  Market --> Ledger
+  Market --> CUSD
+  Verifier --> Ledger
+  Dispute --> Market
+  Dispute --> Ledger
+  Subsidy --> CUSD

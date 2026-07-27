@@ -1,0 +1,112 @@
+classDiagram
+  direction TB
+
+  class HarvestLedger {
+    +registerFarmer(wallet, farmerId, district)
+    +registerLot(fibreType, grade, weight, gps, season, metadataURI)
+    +validateLot(lotId, approve)
+    +getLot(lotId)
+    +verifyProofOfOrigin(proof)
+    +hasRole(role, account)
+  }
+
+  class FarmerMarket {
+    +listLot(lotId, askPriceWei)
+    +purchaseLot(offerId)
+    +releasePayment(offerId)
+    +setFeeBps(bps)
+    -platformFeeBps
+  }
+
+  class ProofOfOriginVerifier {
+    +verify(lotId) VerificationResult
+    +logVerification(lotId, verifier)
+    +computeExpectedProof(...)
+  }
+
+  class IndustryMarkRegistry {
+    +registerFarmerId(farmer, farmerId)
+    +issueMark(farmer, type, desc, expires, uri)
+    +revokeMark(markId)
+    +isMarkValid(markId)
+  }
+
+  class NewsBulletin {
+    +publishBulletin(type, title, body, uri)
+    +archiveBulletin(id)
+    +getActiveBulletins()
+  }
+
+  class GasSubsidyPool {
+    +deposit(amount)
+    +claimSubsidy(reason)
+    +setMaxDailyClaim(amount)
+  }
+
+  class DisputeResolution {
+    +openDispute(offerId, type, description)
+    +resolveDispute(id, favorFarmer, note, refund)
+    +cancelDispute(id)
+  }
+
+  class ReputationSystem {
+    +registerEntity(wallet, type)
+    +recordSuccessfulTransaction(id)
+    +submitReview(txId, reviewed, score, comment)
+    +getReputation(wallet)
+  }
+
+  class PriceOracle {
+    +updatePrice(fibreType, grade, pricePerKg)
+    +getSuggestedPrice(fibreType, grade, weight)
+    +batchUpdatePrices(...)
+  }
+
+  class MultiSigTreasury {
+    +proposeTransaction(...)
+    +signTransaction(txId)
+    +executeTransaction(txId)
+    +addSigner(address)
+  }
+
+  class IERC20_cUSD {
+    +approve(spender, amount)
+    +transfer(to, amount)
+    +transferFrom(from, to, amount)
+  }
+
+  class ExpressAPI {
+    +authChallenge()
+    +authLogin(signature)
+    +validateLot()
+    +releasePayment()
+    +issueMark()
+    +publishNews()
+    +uploadIpfsMetadata()
+  }
+
+  class RoleContext {
+    +address
+    +roles
+    +isFarmer
+    +isValidator
+    +isGovernment
+    +isAdmin
+    +refreshRoles()
+  }
+
+  FarmerMarket --> HarvestLedger : requires validated lot
+  FarmerMarket --> IERC20_cUSD : escrow and payout
+  ProofOfOriginVerifier --> HarvestLedger : reads lot + PoO
+  DisputeResolution --> FarmerMarket : offer escrow
+  DisputeResolution --> HarvestLedger : lot context
+  DisputeResolution --> IERC20_cUSD : refunds
+  GasSubsidyPool --> IERC20_cUSD : subsidy token
+  MultiSigTreasury --> IERC20_cUSD : treasury moves
+  ExpressAPI --> HarvestLedger : relayer validate
+  ExpressAPI --> FarmerMarket : relayer release
+  ExpressAPI --> IndustryMarkRegistry : issue or revoke
+  ExpressAPI --> NewsBulletin : publish
+  ExpressAPI --> DisputeResolution : resolve
+  RoleContext --> HarvestLedger : hasRole checks
+  RoleContext --> IndustryMarkRegistry : GOVERNMENT_ROLE

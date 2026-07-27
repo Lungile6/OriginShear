@@ -1,0 +1,91 @@
+flowchart LR
+  subgraph Actors["Actors"]
+    Public((Public))
+    Buyer((Buyer))
+    Farmer((Farmer))
+    Validator((Validator))
+    Government((Government))
+    Admin((Admin))
+  end
+
+  subgraph PublicUC["Public"]
+    UC_Landing[View landing and news]
+    UC_Verify[Verify Proof of Origin]
+    UC_Connect[Connect wallet]
+    UC_Apply[Apply for role access]
+  end
+
+  subgraph BuyerUC["Buyer"]
+    UC_Browse[Browse marketplace]
+    UC_Buy[Purchase lot with cUSD]
+    UC_History[View purchase history]
+    UC_Dispute[Open dispute]
+    UC_Review[Submit review]
+  end
+
+  subgraph FarmerUC["Farmer"]
+    UC_Dash[View farmer dashboard]
+    UC_RegLot[Register harvest lot]
+    UC_IPFS[Upload lot metadata to IPFS]
+    UC_List[List lot on market]
+    UC_Lots[View lots and PoO QR]
+    UC_Subsidy[Claim gas subsidy]
+    UC_Marks[View industry marks]
+  end
+
+  subgraph ValidatorUC["Validator"]
+    UC_Queue[Review validation queue]
+    UC_Validate[Validate or reject lot]
+    UC_Release[Release escrow payment]
+    UC_Audit[View audit log]
+    UC_Resolve[Resolve dispute]
+  end
+
+  subgraph GovUC["Government"]
+    UC_Issue[Issue industry mark]
+    UC_Revoke[Revoke mark]
+    UC_News[Publish news bulletin]
+  end
+
+  subgraph AdminUC["Admin"]
+    UC_Grant[Grant and revoke roles]
+    UC_RegFarmer[Register farmer on-chain]
+    UC_Logins[View login directory]
+    UC_ReviewReq[Review access requests]
+  end
+
+  Public --> UC_Landing
+  Public --> UC_Verify
+  Public --> UC_Connect
+  Public --> UC_Apply
+
+  Buyer --> UC_Browse
+  Buyer --> UC_Buy
+  Buyer --> UC_History
+  Buyer --> UC_Dispute
+  Buyer --> UC_Review
+  Buyer --> UC_Verify
+
+  Farmer --> UC_Dash
+  Farmer --> UC_RegLot
+  Farmer --> UC_IPFS
+  Farmer --> UC_List
+  Farmer --> UC_Lots
+  Farmer --> UC_Subsidy
+  Farmer --> UC_Marks
+  Farmer --> UC_Connect
+
+  Validator --> UC_Queue
+  Validator --> UC_Validate
+  Validator --> UC_Release
+  Validator --> UC_Audit
+  Validator --> UC_Resolve
+
+  Government --> UC_Issue
+  Government --> UC_Revoke
+  Government --> UC_News
+
+  Admin --> UC_Grant
+  Admin --> UC_RegFarmer
+  Admin --> UC_Logins
+  Admin --> UC_ReviewReq
